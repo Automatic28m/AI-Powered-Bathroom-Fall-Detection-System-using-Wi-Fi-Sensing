@@ -1,0 +1,27 @@
+// Prisma schema — single source of truth for the database
+// See Design.md §5 and CONVENTIONS.md §5 for rules
+// 
+// IMPORTANT: Every change requires a PR reviewed by พัลลภ + พลกฤต (both).
+// Run: prisma migrate dev --name <description>
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// TODO (W2–W3): fill in all models below
+// Reference: Design.md §5.1 for the full table list
+
+// model Account { ... }
+// model House { ... }
+// model Bathroom { ... }
+// model Baseline { ... }
+// model BathroomWatcher { ... }
+// model FallEvent { ... }
+// model AlertDelivery { ... }
+// model AuditLog { ... }
+// model Setting { ... }

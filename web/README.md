@@ -11,31 +11,34 @@ Admins manage accounts, houses, bathrooms and watchers. Users see their house an
 Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web app + docs).
 **Current target: up to W3–W5, Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5).** W5–W7 hasn't started.
 
-| Week | Task | Status |
-|---|---|---|
-| W1 | `GIT_FLOW.md`, `CONVENTIONS.md`, repo setup | ✅ Done |
-| W1–W2 | `DesignSystem.md` + wireframes of the main pages | ✅ Done |
-| W2–W3 | Prisma schema + migrations → **M2** | ✅ `0001_init` merged into `develop` (PR #4). `0002_auth_serial_ids` waiting for review by พัลลภ → then M2 is frozen. |
-| W3–W5 | Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5) | ✅ Done and tested end to end. Waiting for PR review. |
-| W5–W7 | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ⬜ Not started |
-| W8–W10 | Fall dashboard, history, chart, heatmap view, SSE (WA-16) | ⬜ Not started |
-| W9–W10 | User pages (WU-1 to WU-4) | ⬜ Not started |
-| W10 | Audit log page (WA-17) | ⬜ Not started |
-| W10–W11 | Test plan + web testing | ⬜ Not started |
+| Week    | Task                                                                              | Status                                                                                                                           |
+| ------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| W1      | `GIT_FLOW.md`, `CONVENTIONS.md`, repo setup                                       | ✅ Done. Root README, `.editorconfig`, `.gitattributes` and PR template are on branch `chore/repo-setup`, waiting for PR review. |
+| W1–W2   | `DesignSystem.md` + wireframes of the main pages                                  | ✅ Done                                                                                                                          |
+| W2–W3   | Prisma schema + migrations → **M2**                                               | ✅ `0001_init` merged into `develop` (PR #4). `0002_auth_serial_ids` waiting for review by พัลลภ → then M2 is frozen.             |
+| W3–W5   | Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5)          | ✅ Done and tested end to end. Waiting for PR review.                                                                            |
+| W5–W7   | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ⬜ Not started                                                                                                                   |
+| W8–W10  | Fall dashboard, history, chart, heatmap view, SSE (WA-16)                         | ⬜ Not started                                                                                                                   |
+| W9–W10  | User pages (WU-1 to WU-4)                                                         | ⬜ Not started                                                                                                                   |
+| W10     | Audit log page (WA-17)                                                            | ⬜ Not started                                                                                                                   |
+| W10–W11 | Test plan + web testing                                                           | ⬜ Not started                                                                                                                   |
 
 ### What's done
 
 **W1: repo setup and team docs**
+
 - [`GIT_FLOW.md`](../docs/GIT_FLOW.md) and [`CONVENTIONS.md`](../docs/CONVENTIONS.md) are written. The code follows them, and TODOs are written as `TODO(name): ...`.
 - `GIT_FLOW.md` now matches how the repo really works: feature branches start from and merge into **`develop`** (the default branch). `main` only gets `develop` at milestones, and milestone tags go on `main`.
-- `web/` has `.gitignore`, `.editorconfig` (UTF-8, LF, 2 spaces) and `.gitattributes` (LF on every OS).
+- The repo root has a `README.md`, `.editorconfig` (UTF-8, LF, 2 spaces; 4 for Python/C), `.gitattributes` (LF on every OS) and `.github/pull_request_template.md` (branch `chore/repo-setup`). `web/` keeps its own `.gitignore`.
 - Prettier, ESLint and `jsconfig.json` (the `@/` import path) are set up.
 
 **W1–W2: design**
+
 - [`DesignSystem.md`](../docs/DesignSystem.md) covers colors, fonts (Noto Sans Thai, Barlow, Poppins), layout, buttons, badges, stat cards, tables and the fall alert banner. It's adapted from the **Sedap** template (MIT), which sits in `sedap/` for reference and isn't committed.
 - [`Wireframes.md`](../docs/Wireframes.md) has a layout for every page: login, admin dashboard, accounts, houses, bathrooms, watchers, audit log, user home, alert settings and the heatmap modal.
 
 **W2–W3: database (M2)**
+
 - [`prisma/schema.prisma`](prisma/schema.prisma) has all 9 tables from [`Design.md`](../docs/Design.md) §5.1: `accounts`, `houses`, `bathrooms`, `baselines`, `bathroom_watchers`, `fall_events`, `alert_deliveries`, `audit_logs` and `settings`. It also has the Better Auth tables `sessions`, `auth_accounts` and `verifications`.
 - [`prisma/migrations/0001_init`](prisma/migrations/0001_init/migration.sql) creates the tables, the indexes on `fall_events(bathroom_id, detected_at DESC)` and `audit_logs(created_at DESC)`, and the `pg_notify('fall_events', id)` trigger used for real-time updates (SSE).
 - [`prisma/seed.mjs`](prisma/seed.mjs) adds the default settings: `window_s`, `hop_s`, `confidence_threshold`, `cooldown_s` and `recalibration_months` = 6.
@@ -45,9 +48,10 @@ Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web ap
   - Calibration status isn't stored. It's worked out from `last_calibrated_at` + `recalibration_months` (WA-11).
 
 **W3–W5: login, roles and accounts** (branch `feat/web-auth`)
+
 - **Next.js setup:** Next.js 15.5.29 (was 15.1.0, which has a known middleware auth-bypass bug), Better Auth 1.7.21, zod 4 and Prisma 6.19.3, all pinned to exact versions.
 - **Better Auth** ([`lib/auth.js`](lib/auth.js)) is mapped onto our tables (`accounts`, `auth_accounts`, `sessions`, `verifications`) with numeric IDs.
-  - Login works with a username or an email (WU-1).
+  - Login works with a username or an email (WU-1), with a show/hide password button (Wireframes.md §1).
   - Public sign-up is off.
   - Login is rate-limited to 5 tries per minute (Design.md §10).
   - A turned-off account can't log in (WA-5).
@@ -61,60 +65,73 @@ Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web ap
   - Every change writes an `audit_logs` row in the same transaction ([`lib/audit.js`](lib/audit.js)).
 - **Accounts page** `/admin/accounts` (Wireframes.md §3):
 
-  | PRD | What you can do |
-  |---|---|
-  | WA-1 | "+ เพิ่ม Admin": username, password, full name, phone, email |
-  | WA-2 | Delete another admin. There's no delete button on your own row, and the API refuses with 403. History stays in the audit log. |
-  | WA-3 | "+ เพิ่ม User": the same fields plus an address |
+  | PRD  | What you can do                                                                                                                         |
+  | ---- | --------------------------------------------------------------------------------------------------------------------------------------- |
+  | WA-1 | "+ เพิ่ม Admin": username, password, full name, phone, email                                                                              |
+  | WA-2 | Delete another admin. There's no delete button on your own row, and the API refuses with 403. History stays in the audit log.           |
+  | WA-3 | "+ เพิ่ม User": the same fields plus an address                                                                                           |
   | WA-4 | Table of username, email, role, linked house, bathrooms watched, date added and status. Has search, a role filter and 20 rows per page. |
-  | WA-5 | On/off switch for user accounts. Turning one off logs that user out everywhere. |
+  | WA-5 | On/off switch for user accounts. Turning one off logs that user out everywhere.                                                         |
+
 - **First admin:** `npx prisma db seed` creates it from the `SEED_ADMIN_*` variables, but only when no admin exists yet.
 - **Migration [`0002_auth_serial_ids`](prisma/migrations/0002_auth_serial_ids/migration.sql):** the 3 Better Auth tables now use `SERIAL` IDs, and `schema.prisma` matches (`prisma migrate diff` shows no drift). Better Auth's numeric-ID mode applies to every auth table, so text IDs would break login. The IDs are internal to Better Auth and Python never reads these tables. Applying it logs everyone out once. **พัลลภ needs to review this (it's in `prisma/`).**
 
 ### End-to-end test (W3–W5)
 
-Run against the dev server and a real PostgreSQL (last run 2026-11-27, test accounts removed afterwards): **all passed.**
+Run against a production build (`npm run build` + `next start`) and a real PostgreSQL 16 (last run 2026-11-27, test accounts removed afterwards): **29/29 passed.** Lint and build are clean.
 
-| Area | Checks |
-|---|---|
-| Not logged in | `/admin`, `/home` and `/` go to `/login`. The API returns 401. Public sign-up is blocked. |
-| Login (WU-1) | Works with a username or an email. A wrong password gets 401. The 7th wrong try in a minute gets 429. |
-| Roles | An admin opening `/home` goes to `/admin`. A user opening `/admin` goes to `/home`. A user calling `/api/accounts` gets 403. |
-| WA-1 / WA-3 | Admin and user are created, with the username lowercased and the phone normalized. A user with no address, a bad phone or a short password gets 400. A duplicate username or email gets 409. |
-| WA-4 | List, role filter and search work. No password data is ever returned. |
-| WA-5 | Turning a user off ends their session and blocks login (`ACCOUNT_DISABLED`). Turning them back on lets them log in. Turning an admin on or off gets 403. |
-| WA-2 | Deleting yourself gets 403 (`CANNOT_DELETE_SELF`). Deleting a user gets 403. Deleting another admin gets 204 and ends their session. An unknown ID gets 404. |
-| Audit | Each create, update and delete has its `audit_logs` row with `actorUsername`. |
+| Area          | Checks                                                                                                                                                                                       |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Not logged in | `/admin`, `/home` and `/` go to `/login`. The API returns 401. Public sign-up is blocked.                                                                                                    |
+| Login (WU-1)  | Works with a username or an email. A wrong password gets 401. The 7th wrong try in a minute gets 429.                                                                                        |
+| Roles         | An admin opening `/home` goes to `/admin`. A user opening `/admin` goes to `/home`. A user calling `/api/accounts` gets 403.                                                                 |
+| WA-1 / WA-3   | Admin and user are created, with the username lowercased and the phone normalized. A user with no address, a bad phone or a short password gets 400. A duplicate username or email gets 409. |
+| WA-4          | List, role filter and search work. No password data is ever returned.                                                                                                                        |
+| WA-5          | Turning a user off ends their session and blocks login (`ACCOUNT_DISABLED`). Turning them back on lets them log in. Turning an admin on or off gets 403.                                     |
+| WA-2          | Deleting yourself gets 403 (`CANNOT_DELETE_SELF`). Deleting a user gets 403. Deleting another admin gets 204 and ends their session. An unknown ID gets 404.                                 |
+| Audit         | Each create, update and delete has its `audit_logs` row with `actorUsername`.                                                                                                                |
 
 ### Scope check (Chapter 1 §1.3.3 and §1.3.6)
 
 The schema was tested on PostgreSQL 16. Each scope item was run as real queries, inside a transaction that was rolled back afterwards. **20/20 passed.**
 
-| Scope (Chapter 1) | Covered by | Test |
-|---|---|---|
-| Add admin: username, password, full name, phone, email | `accounts` + `auth_accounts.password` | ✅ |
-| Delete another admin, but not yourself | Deleting works and history is kept (`SET NULL`). The "not yourself" rule goes in the API. | ✅ |
-| Add user, also with an address | `accounts.address` | ✅ |
-| List users: username, email, house, number of bathrooms watched, date added | `accounts` + `house` + count of `bathroom_watchers` | ✅ |
-| Turn a user account on or off | `accounts.is_active` | ✅ |
-| Add, view and edit a house: name, address, date added, number of bathrooms, users | `houses` | ✅ |
-| Add and edit a bathroom: name, Rx MAC, baseline file. A MAC can't be used twice. | `bathrooms.rx_mac` (unique) + `baselines` | ✅ |
-| "ควรปรับเทียบใหม่" after 6 months | `last_calibrated_at` + `settings.recalibration_months` | ✅ |
-| Link a user to a house, choose which bathrooms they watch, change or remove a pairing | `accounts.house_id`, `bathroom_watchers` | ✅ |
-| Dashboard: at least 10 latest falls, 7-day chart, history with date, house, bathroom and heatmap | `fall_events` + index `(bathroom_id, detected_at DESC)` | ✅ |
-| View and filter the audit log by who, action type and date | `audit_logs` + index `(created_at DESC)` | ✅ |
-| User logs in with username or email | `username` and `email` are both unique | ✅ |
-| User overview: bathrooms watched, family in the same house, at least 10 latest falls | `bathroom_watchers`, `accounts.house_id`, `fall_events` | ✅ |
-| User sees alert status per bathroom and turns it on or off | `bathroom_watchers.alerts_enabled` | ✅ |
-| Email alert when a fall happens | `alert_deliveries` (`channel` = `email`) | ✅ |
-| VLM result: 2 states with a confidence value (§1.3.3) | `fall_events.confidence`, `result`, `model_version` | ✅ |
-| Real-time dashboard updates | trigger `pg_notify('fall_events', id)`: notification received on insert | ✅ |
+| Scope (Chapter 1)                                                                                | Covered by                                                                                | Test |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | ---- |
+| Add admin: username, password, full name, phone, email                                           | `accounts` + `auth_accounts.password`                                                     | ✅   |
+| Delete another admin, but not yourself                                                           | Deleting works and history is kept (`SET NULL`). The "not yourself" rule goes in the API. | ✅   |
+| Add user, also with an address                                                                   | `accounts.address`                                                                        | ✅   |
+| List users: username, email, house, number of bathrooms watched, date added                      | `accounts` + `house` + count of `bathroom_watchers`                                       | ✅   |
+| Turn a user account on or off                                                                    | `accounts.is_active`                                                                      | ✅   |
+| Add, view and edit a house: name, address, date added, number of bathrooms, users                | `houses`                                                                                  | ✅   |
+| Add and edit a bathroom: name, Rx MAC, baseline file. A MAC can't be used twice.                 | `bathrooms.rx_mac` (unique) + `baselines`                                                 | ✅   |
+| "ควรปรับเทียบใหม่" after 6 months                                                                   | `last_calibrated_at` + `settings.recalibration_months`                                    | ✅   |
+| Link a user to a house, choose which bathrooms they watch, change or remove a pairing            | `accounts.house_id`, `bathroom_watchers`                                                  | ✅   |
+| Dashboard: at least 10 latest falls, 7-day chart, history with date, house, bathroom and heatmap | `fall_events` + index `(bathroom_id, detected_at DESC)`                                   | ✅   |
+| View and filter the audit log by who, action type and date                                       | `audit_logs` + index `(created_at DESC)`                                                  | ✅   |
+| User logs in with username or email                                                              | `username` and `email` are both unique                                                    | ✅   |
+| User overview: bathrooms watched, family in the same house, at least 10 latest falls             | `bathroom_watchers`, `accounts.house_id`, `fall_events`                                   | ✅   |
+| User sees alert status per bathroom and turns it on or off                                       | `bathroom_watchers.alerts_enabled`                                                        | ✅   |
+| Email alert when a fall happens                                                                  | `alert_deliveries` (`channel` = `email`)                                                  | ✅   |
+| VLM result: 2 states with a confidence value (§1.3.3)                                            | `fall_events.confidence`, `result`, `model_version`                                       | ✅   |
+| Real-time dashboard updates                                                                      | trigger `pg_notify('fall_events', id)`: notification received on insert                   | ✅   |
 
 ### Left to finish M2
 
-- [x] Run `npx prisma migrate dev` against a real PostgreSQL. The migration applied, and the database matches `schema.prisma` with no drift.
+- [x] Run `npx prisma migrate dev` against a real PostgreSQL. The migration applied, and the database matches `schema.prisma` with no drift (re-checked 2026-11-27 with `prisma migrate diff`).
 - [x] `0001_init` merged into `develop` (PR #4).
 - [ ] Open a PR for `0002_auth_serial_ids` into `develop` and get it reviewed by **พัลลภ + พลกฤต** (required for `prisma/`, `GIT_FLOW.md` §4). Once merged, M2 is done.
+
+### PR order
+
+Each branch is based on `develop`, except `feat/web-auth`, which needs the serial-ID migration:
+
+| #   | Branch                    | PR title                                                                                              | Reviewers    |
+| --- | ------------------------- | ----------------------------------------------------------------------------------------------------- | ------------ |
+| 1   | `chore/repo-setup`        | `chore(docs): add root readme, editorconfig, gitattributes and pr template` (+ GIT_FLOW on `develop`) | anyone       |
+| 2   | `feat/db-auth-serial-ids` | `feat(db): use serial ids for better auth tables` → **M2**                                            | พัลลภ + พลกฤต |
+| 3   | `feat/web-auth`           | `feat(web): add better auth login, roles and accounts pages` (WA-1 to WA-5, WU-1)                     | prefer พัลลภ  |
+
+Open #3 against `feat/db-auth-serial-ids` until #2 is merged, then retarget it to `develop`.
 
 ### Next (W5–W7, not started)
 
@@ -123,14 +140,14 @@ The schema was tested on PostgreSQL 16. Each scope item was run as real queries,
 
 ## Stack
 
-| Item | Choice |
-|---|---|
-| Framework | Next.js 15.5, App Router |
-| Language | JavaScript (no TypeScript). JSDoc + zod 4 for types. |
-| Auth | Better Auth 1.7 (email/username + password, username plugin) |
-| ORM | Prisma 6.19 (schema in `prisma/schema.prisma`) |
-| UI | Tailwind CSS + components adapted from the Sedap template (MIT) + Recharts |
-| Real-time | Server-Sent Events (SSE) via PostgreSQL LISTEN/NOTIFY |
+| Item      | Choice                                                                     |
+| --------- | -------------------------------------------------------------------------- |
+| Framework | Next.js 15.5, App Router                                                   |
+| Language  | JavaScript (no TypeScript). JSDoc + zod 4 for types.                       |
+| Auth      | Better Auth 1.7 (email/username + password, username plugin)               |
+| ORM       | Prisma 6.19 (schema in `prisma/schema.prisma`)                             |
+| UI        | Tailwind CSS + components adapted from the Sedap template (MIT) + Recharts |
+| Real-time | Server-Sent Events (SSE) via PostgreSQL LISTEN/NOTIFY                      |
 
 ## Folder layout
 
@@ -187,6 +204,8 @@ npx prisma db seed
 npm run dev
 ```
 
+`npm run build` and `npm run dev` share the `.next/` folder. If you build while the dev server is running, the dev server starts failing with `Cannot find module './vendor-chunks/...'`: stop it (Ctrl+C) and run `npm run dev` again.
+
 A quick local database with Docker:
 
 ```bash
@@ -212,11 +231,11 @@ The other sidebar pages (houses, bathrooms, watchers, audit log, alert settings)
 
 See `.env.example` for the full list. Required:
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `BETTER_AUTH_SECRET` | Random secret for session signing (32+ characters, e.g. `openssl rand -hex 32`) |
-| `NEXT_PUBLIC_APP_URL` | Public base URL (e.g. https://your-domain.com). Better Auth only accepts requests from this origin. |
+| Variable                                                         | Description                                                                                                                  |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                   | PostgreSQL connection string                                                                                                 |
+| `BETTER_AUTH_SECRET`                                             | Random secret for session signing (32+ characters, e.g. `openssl rand -hex 32`)                                              |
+| `NEXT_PUBLIC_APP_URL`                                            | Public base URL (e.g. https://your-domain.com). Better Auth only accepts requests from this origin.                          |
 | `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_EMAIL` | First admin, created by `npx prisma db seed` if no admin exists. `SEED_ADMIN_FULL_NAME` and `SEED_ADMIN_PHONE` are optional. |
 
 ## Code conventions
@@ -224,6 +243,7 @@ See `.env.example` for the full list. Required:
 See [`docs/CONVENTIONS.md`](../docs/CONVENTIONS.md) §4 (JavaScript) and §5 (Database). Run `npm run lint` and `npm run format` before each commit.
 
 Key rules:
+
 - Server Components by default. `"use client"` only for state, events or SSE.
 - Check the session and role on the server in every API route handler.
 - Validate all inputs with zod.

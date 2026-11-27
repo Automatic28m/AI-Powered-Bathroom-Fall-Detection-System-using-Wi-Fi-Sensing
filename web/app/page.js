@@ -1,10 +1,8 @@
-// Root page — redirect to login if not signed in, or to the right dashboard
+// Root page: send each role to its own dashboard, or to /login
 import { redirect } from 'next/navigation'
+import { getCurrentUser, HOME_BY_ROLE } from '@/lib/session'
 
-export default function RootPage() {
-  // TODO(phonlakrit): check session with Better Auth and redirect accordingly
-  // Admin  → /admin
-  // User   → /home
-  // No session → /login
-  redirect('/login')
+export default async function RootPage() {
+  const user = await getCurrentUser()
+  redirect(user ? HOME_BY_ROLE[user.role] : '/login')
 }

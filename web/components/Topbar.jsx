@@ -1,12 +1,25 @@
 'use client'
 
-// Sedap-style top bar with search, alert counters, and user greeting
-import { AlertTriangle, Bell, Menu, Search } from 'lucide-react'
+// Sedap-style top bar with search, alert counters, user greeting and logout
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { AlertTriangle, Bell, LogOut, Menu, Search } from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
 
 /**
  * @param {{ userName?: string, roleLabel?: string, onMenuOpen?: () => void }} props
  */
 export default function Topbar({ userName = 'ผู้ใช้งาน', roleLabel = 'Admin', onMenuOpen }) {
+  const router = useRouter()
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    await authClient.signOut()
+    router.replace('/login')
+    router.refresh()
+  }
+
   return (
     <header className="flex flex-wrap items-center gap-4 pb-6">
       {/* Mobile menu toggle */}
@@ -68,6 +81,16 @@ export default function Topbar({ userName = 'ผู้ใช้งาน', roleL
           <div className="flex size-11 items-center justify-center rounded-full bg-[#00b074] text-sm font-bold text-white shadow-sm">
             {userName.slice(0, 1).toUpperCase()}
           </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="flex size-11 items-center justify-center rounded-[14px] border border-[#ebebeb] bg-white text-[#464255] transition-colors hover:bg-[#f3f2f7] disabled:opacity-50"
+            aria-label="ออกจากระบบ"
+            title="ออกจากระบบ"
+          >
+            <LogOut className="size-5" />
+          </button>
         </div>
       </div>
     </header>

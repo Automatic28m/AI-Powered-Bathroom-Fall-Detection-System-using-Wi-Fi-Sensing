@@ -1,13 +1,14 @@
-// Admin section layout using Sedap AppShell
+// Admin section: admins only, checked on the server
 import AppShell from '@/components/AppShell'
+import { requirePageRole } from '@/lib/session'
 
 /**
  * @param {{ children: React.ReactNode }} props
  */
-export default function AdminLayout({ children }) {
-  // TODO(phonlakrit): verify admin session on the server before rendering
+export default async function AdminLayout({ children }) {
+  const user = await requirePageRole('admin')
   return (
-    <AppShell role="admin" userName="Admin">
+    <AppShell role="admin" userName={user.fullName}>
       {children}
     </AppShell>
   )

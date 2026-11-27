@@ -168,3 +168,9 @@ Key rules:
 - Validate all inputs with zod.
 - Every DB write includes an `audit_logs` row in the same transaction.
 - Never put secrets in `NEXT_PUBLIC_*` env vars.
+
+## Credits
+
+The UI is adapted from the **Sedap** admin dashboard template, Copyright (c) 2026 Hummingbird UI, distributed by ThemeWagon under the MIT License.
+The free version requires credit, so the app shows a ThemeWagon credit link in the sidebar and on the login page. Don't remove it.
+The full license text is in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The template itself (`sedap/`) is kept for reference only and isn't committed.

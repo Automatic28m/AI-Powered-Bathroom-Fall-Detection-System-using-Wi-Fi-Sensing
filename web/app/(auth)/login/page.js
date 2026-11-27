@@ -33,6 +33,17 @@ export default function LoginPage() {
 
         <p className="relative text-xs text-white/75">
           © 2569 โครงงาน C2 — ภาควิชาวิศวกรรมคอมพิวเตอร์ มทร.ธัญบุรี
+          <br />
+          {/* Attribution kept from the Sedap free template ("Credit required") */}
+          Template: Sedap by{' '}
+          <a
+            href="https://themewagon.com"
+            target="_blank"
+            rel="noopener"
+            className="text-white/90 underline underline-offset-2"
+          >
+            ThemeWagon
+          </a>
         </p>
       </aside>
 

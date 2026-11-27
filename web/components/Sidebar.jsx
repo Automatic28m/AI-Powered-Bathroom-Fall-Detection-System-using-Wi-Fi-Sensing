@@ -122,6 +122,18 @@ export default function Sidebar({ role, open = false, onClose }) {
           <div className="mt-8 px-3 text-xs leading-relaxed text-[#a3a3a3]">
             <p className="font-semibold text-[#464255]/75">FallWatch Admin (C2)</p>
             <p>© 2569 Computer Engineering, RMUTT</p>
+            {/* Attribution kept from the Sedap free template ("Credit required") */}
+            <p className="mt-3">
+              Template: Sedap, designed by Peterdraw, made by{' '}
+              <a
+                href="https://themewagon.com"
+                target="_blank"
+                rel="noopener"
+                className="text-[#a3a3a3] underline-offset-2 hover:underline"
+              >
+                ThemeWagon
+              </a>
+            </p>
           </div>
         </div>
       </aside>

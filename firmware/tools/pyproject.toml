@@ -1,0 +1,31 @@
+[project]
+name = "csi-firmware-tools"
+version = "0.1.0"
+description = "Host-side tools to check and view the CSI stream from the csi_rx firmware"
+requires-python = ">=3.11"
+dependencies = [
+  "pyserial==3.5",
+  "numpy==2.4.6",
+  "matplotlib==3.10.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "ruff==0.16.9",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["csi_serial", "csi_check", "csi_live"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

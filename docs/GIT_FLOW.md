@@ -1,6 +1,6 @@
 # Git Flow
 
-How we use Git and GitHub. Keep it simple: **one main branch, short feature branches, PRs for everything.**
+How we use Git and GitHub. Keep it simple: **one integration branch (`develop`), short feature branches, PRs for everything.**
 
 ## 1. Repo layout (one repo for everything)
 
@@ -17,10 +17,11 @@ How we use Git and GitHub. Keep it simple: **one main branch, short feature bran
 
 ## 2. Branches
 
-We use **GitHub Flow**:
+We use **GitHub Flow on `develop`**, with `main` for milestone releases:
 
-- **`main`**: always works. Protected: no direct pushes, only merged PRs.
-- **Short-lived branches** off `main`, merged back with a PR. Delete them after merging.
+- **`develop`**: the default branch. Every feature branch starts here and merges back here. Protected: no direct pushes, only merged PRs.
+- **`main`**: always works, demo-ready. Updated only at milestones by a PR from `develop` into `main` (see §6).
+- **Short-lived branches** off `develop`, merged back with a PR. Delete them after merging.
 
 Branch name: `<type>/<area>-<short-description>`
 
@@ -72,7 +73,7 @@ chore(infra): pin vllm version in compose
 
 ## 4. Pull requests
 
-1. Push your branch, open a PR into `main`.
+1. Push your branch, open a PR into `develop`.
 2. Fill in: **what** changed, **why**, **how to test**, and the linked PRD IDs (e.g. `WA-9`).
 3. **At least 1 approval** from another member before merging.
 4. **Squash and merge.** The PR title becomes the commit, so use the commit format for it.
@@ -108,7 +109,7 @@ If you commit a secret by mistake: **change the secret right away**, then tell t
 
 ## 6. Tags (milestones)
 
-Tag `main` at each milestone so we can always get back to a working demo:
+At each milestone, merge `develop` into `main` with a PR, then tag `main` so we can always get back to a working demo:
 
 | Tag | When |
 |---|---|
@@ -138,9 +139,9 @@ git config user.email "<your GitHub email>"
 ## 8. Daily routine
 
 ```bash
-git switch main && git pull              # start from latest
+git switch develop && git pull           # start from latest
 git switch -c feat/web-houses-page       # new branch
 # ...work, commit often...
-git fetch origin && git rebase origin/main   # stay up to date
+git fetch origin && git rebase origin/develop   # stay up to date
 git push -u origin feat/web-houses-page  # then open a PR
 ```

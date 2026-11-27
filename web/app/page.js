@@ -2,7 +2,7 @@
 import { redirect } from 'next/navigation'
 
 export default function RootPage() {
-  // TODO: check session with Better Auth and redirect accordingly
+  // TODO(phonlakrit): check session with Better Auth and redirect accordingly
   // Admin  → /admin
   // User   → /home
   // No session → /login

@@ -1,7 +1,7 @@
 # Design System
 
-Visual and component rules for the Next.js web app.
-All UI must follow these tokens. Colors and spacing come from here, never from arbitrary Tailwind values.
+Visual and component rules for the **FallWatch.** Next.js web app, adapted from the **Sedap** admin dashboard template.
+All UI must follow these tokens. Colors, radii, and shadows come from here.
 
 ---
 
@@ -9,264 +9,204 @@ All UI must follow these tokens. Colors and spacing come from here, never from a
 
 | Item | Value |
 |---|---|
-| Product name | Fall Watch |
-| Audience | Thai caregivers and system admins |
-| Tone | Clear, calm, trustworthy. Never alarming unless a fall actually happened. |
+| Product name | `FallWatch.` (ระบบตรวจจับการล้มอัจฉริยะด้วยคลื่นไวไฟ) |
+| Audience | Thai caregivers (ญาติ/ผู้ดูแล) and system admins (ผู้ดูแลระบบ) |
+| Tone | Light, clean, calm, trustworthy. Clear alert hierarchy when a fall happens. |
+| Theme mode | **Light mode only** (soft gray canvas `#f3f2f7` with crisp white cards `#ffffff`) |
 | Language | UI text in Thai. Code, comments, commits in English. |
 
 ---
 
 ## 2. Color tokens
 
-We use Tailwind CSS v3 with a custom theme. These map to `tailwind.config.js`.
+Adapted from Sedap's theme palette into Tailwind CSS (`tailwind.config.js` & `globals.css`).
 
-### 2.1 Semantic palette
+### 2.1 Surfaces & Borders
 
-| Token | Tailwind class | Hex | Usage |
+| Token | Hex | Tailwind / CSS usage | Usage |
 |---|---|---|---|
-| `color-bg` | `bg-slate-50` | `#f8fafc` | Page background |
-| `color-surface` | `bg-white` | `#ffffff` | Cards, sidebars, modals |
-| `color-border` | `border-slate-200` | `#e2e8f0` | All borders and dividers |
-| `color-text-primary` | `text-slate-900` | `#0f172a` | Headings, body text |
-| `color-text-secondary` | `text-slate-500` | `#64748b` | Labels, captions, placeholder |
-| `color-text-inverse` | `text-white` | `#ffffff` | Text on dark backgrounds |
+| `bg-subtle` | `#f3f2f7` | `bg-[#f3f2f7]` | Page background canvas |
+| `bg-default` | `#ffffff` | `bg-white` | Cards, sidebar, topbar (mobile), modals, inputs |
+| `bg-muted` | `#ebeaf1` | `bg-[#ebeaf1]` | Subtle hover/divider surfaces |
+| `border-default` | `#ebebeb` | `border-[#ebebeb]` | Input borders, table dividers |
+| `border-highlight` | `#d0d6de` | `border-[#d0d6de]` | Hover borders, vertical dividers |
 
-### 2.2 Brand colors
+### 2.2 Text Colors
 
-| Token | Tailwind class | Hex | Usage |
+| Token | Hex | Tailwind | Usage |
 |---|---|---|---|
-| `color-primary` | `bg-blue-600` | `#2563eb` | Primary buttons, active nav, links |
-| `color-primary-hover` | `bg-blue-700` | `#1d4ed8` | Hover on primary buttons |
-| `color-primary-light` | `bg-blue-50` | `#eff6ff` | Selected row, active badge bg |
+| `text-default` | `#333333` | `text-[#333333]` | Primary body text |
+| `text-muted` | `#464255` | `text-[#464255]` | Page headings, card titles, nav items |
+| `text-subtle` | `#a3a3a3` | `text-[#a3a3a3]` | Subtitles, timestamps, placeholders, inactive icons |
+| `text-inverse` | `#ffffff` | `text-white` | Text on primary/danger buttons and auth brand panel |
 
-### 2.3 Status colors
+### 2.3 Brand & Status Colors
 
-| Token | Tailwind class | Hex | Usage |
+Every semantic color has a `lighter` tint (15% opacity) for soft badges, icon circles, and active nav backgrounds.
+
+| Token | Hex | Lighter (15%) | Usage |
 |---|---|---|---|
-| `color-danger` | `bg-red-600` | `#dc2626` | Fall alert badge, delete button |
-| `color-danger-light` | `bg-red-50` | `#fef2f2` | Fall alert row background |
-| `color-warning` | `bg-amber-500` | `#f59e0b` | Needs recalibration badge |
-| `color-warning-light` | `bg-amber-50` | `#fffbeb` | Warning row background |
-| `color-success` | `bg-green-600` | `#16a34a` | Active / alerts enabled |
-| `color-success-light` | `bg-green-50` | `#f0fdf4` | Success row background |
-| `color-muted` | `bg-slate-400` | `#94a3b8` | Inactive, disabled, off |
+| `primary` (Emerald) | `#00b074` | `rgba(0, 176, 116, 0.15)` | Primary buttons, active sidebar pill & left bar, brand panel, "ปกติ / เปิดแจ้งเตือน" |
+| `primary-dark` | `#009663` | — | Primary button hover |
+| `info` (Sky Blue) | `#2d9cdb` | `rgba(45, 156, 219, 0.15)` | Charts, period filter icon, secondary action buttons |
+| `danger` (Coral Red) | `#ff5b5b` | `rgba(255, 91, 91, 0.15)` | Fall alert banner, "พบการล้ม" badge, delete buttons, high-priority counter |
+| `warning` (Amber) | `#f7c604` (`#d6ab00` text) | `rgba(247, 198, 4, 0.15)` | "ควรปรับเทียบใหม่" (Needs recalibration) badge & warning counter |
+| `secondary` (Slate) | `#5e6c93` | `rgba(94, 108, 147, 0.15)` | Neutral badges, inactive states |
 
 ---
 
 ## 3. Typography
 
-Font stack: `'Noto Sans Thai', 'Inter', system-ui, sans-serif`
+Font stack: `'Noto Sans Thai', 'Barlow', system-ui, sans-serif` (Brand logo uses `'Poppins'`).
 
-Add to `app/layout.js`:
+Configured in `app/layout.js` via `next/font/google`:
 ```js
-import { Inter, Noto_Sans_Thai } from 'next/font/google'
+import { Barlow, Noto_Sans_Thai, Poppins } from 'next/font/google'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const notoThai = Noto_Sans_Thai({ subsets: ['thai'], variable: '--font-noto-thai' })
+const barlow = Barlow({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-barlow' })
+const notoThai = Noto_Sans_Thai({ subsets: ['thai'], weight: ['400', '500', '600', '700'], variable: '--font-noto-thai' })
+const poppins = Poppins({ subsets: ['latin'], weight: ['700'], variable: '--font-poppins' })
 ```
 
 | Role | Tailwind | Size | Weight | Usage |
 |---|---|---|---|---|
-| Page title | `text-2xl font-semibold` | 24 px | 600 | `<h1>` on each page |
-| Section title | `text-lg font-semibold` | 18 px | 600 | Card headers, table titles |
-| Body | `text-sm` | 14 px | 400 | Table cells, descriptions |
-| Caption | `text-xs text-slate-500` | 12 px | 400 | Timestamps, helper text |
-| Label | `text-xs font-medium` | 12 px | 500 | Form labels |
-| Button | `text-sm font-medium` | 14 px | 500 | All buttons |
+| Brand logo | `font-brand text-3xl font-bold tracking-tight` | 30 px | 700 | `FallWatch.` with green/amber dot |
+| Page title | `text-2xl sm:text-[2rem] font-semibold text-[#464255]` | 24–32 px | 600 | `<h1>` / `<h2>` page heading |
+| Card title | `text-lg sm:text-xl font-bold text-[#464255]` | 18–20 px | 700 | Card headers, modal titles |
+| Stat number | `text-3xl sm:text-4xl font-bold text-[#464255]` | 30–36 px | 700 | KPI numbers on stat cards |
+| Body | `text-sm sm:text-base text-[#333333]` | 14–16 px | 400 | Table cells, descriptions |
+| Caption | `text-xs text-[#a3a3a3]` | 12 px | 400 | Timestamps, helper text |
+| Label | `text-xs font-medium text-[#464255]` | 12 px | 500 | Form labels |
+| Button | `text-sm font-semibold` | 14 px | 600 | All buttons |
 
 ---
 
-## 4. Spacing and layout
+## 4. Spacing, Radii, and Layout
 
 | Token | Value | Usage |
 |---|---|---|
-| Page padding | `p-6` (24 px) | Outer padding on every page |
-| Card padding | `p-4` (16 px) | Inside cards |
-| Section gap | `gap-6` | Between sections on a page |
-| Form row gap | `gap-4` | Between form fields |
-| Table row height | `h-12` (48 px) | `<tr>` min-height |
+| Page canvas | `bg-[#f3f2f7] min-h-screen` | Main app background |
+| Card radius | `rounded-[14px]` | All cards, dropdowns, modals, inputs, buttons |
+| Card shadow | `shadow-[0_4px_8px_0_rgb(0_0_0/0.04)]` | Borderless white cards |
+| Card padding | `p-6 sm:p-7` | Inside cards |
+| Section gap | `gap-6` | Between stat cards and chart/table grids |
+| Control height | `h-11` or `h-12` (`44–48px`) | Standard Sedap button & input height |
 
-### Layout structure
+### 4.1 App Shell Layout (Authenticated)
 
 ```
-┌─────────────────────────────────────────────┐
-│  Sidebar (w-56, fixed, hidden on mobile)    │
-│  ┌─────────────────────────────────────────┐│
-│  │  Top bar (h-14): page title + user menu ││
-│  │─────────────────────────────────────────││
-│  │  Main content (flex-1, p-6, scroll)     ││
-│  └─────────────────────────────────────────┘│
-└─────────────────────────────────────────────┘
+┌──────────────┬───────────────────────────────────────────────┐
+│  White       │  Topbar: Search | 🔔 Alerts | 👤 สวัสดี, Name │
+│  Sidebar     ├───────────────────────────────────────────────┤
+│  (w-64/72)   │  Page Header (Title + Subtitle + Filter)      │
+│              │  ───────────────────────────────────────────  │
+│  FallWatch.  │  Main Content (bg-[#f3f2f7], cards grid)      │
+│  │ Active    │                                               │
+│  │ (green)   │                                               │
+└──────────────┴───────────────────────────────────────────────┘
 ```
 
-- Sidebar background: `bg-slate-900` (dark)
-- Sidebar text: `text-slate-300`, active item: `text-white bg-slate-700`
-- Top bar background: `bg-white border-b border-slate-200`
+- **Sidebar:** `bg-white`, sticky `lg:w-72` on desktop, slide-out drawer on mobile.
+- **Active Nav Item:** `bg-[#00b074]/15 text-[#00b074] font-bold rounded-lg` + vertical green bar on the left edge (`w-1.5 bg-[#00b074] rounded-e-md`).
+- **Topbar:** Search input (`bg-[#fdfdfd] rounded-[14px]`), square tinted notification buttons (`size-11 rounded-[14px] bg-[#2d9cdb]/15` or `bg-[#ff5b5b]/15`) with floating circular count badge, and user profile dropdown.
+
+### 4.2 Auth Layout (Login)
+
+Split-screen layout (Sedap `auth-layout`):
+- **Left panel (`lg:grid-cols-[minmax(0,36rem)_1fr]`):** `bg-[#00b074]` with subtle decorative `bg-white/10` circles, `FallWatch.` logo, privacy-first headline ("เฝ้าระวังการล้มในห้องน้ำแบบเรียลไทม์ ไร้กล้อง ไร้สายรัดข้อมือ").
+- **Right panel:** Centered white card (`rounded-[14px]`) with Username/Email + Password form. **No sign-up link** (Admin creates all accounts).
 
 ---
 
 ## 5. Components
 
-All components use **shadcn/ui** as the base. Override only with Tailwind classes. No custom CSS files.
-
 ### 5.1 Buttons
 
 | Variant | Classes | When |
 |---|---|---|
-| Primary | `bg-blue-600 hover:bg-blue-700 text-white` | Main action (Add, Save) |
-| Destructive | `bg-red-600 hover:bg-red-700 text-white` | Delete, disable |
-| Outline | `border border-slate-300 hover:bg-slate-50` | Secondary action (Cancel, Edit) |
-| Ghost | `hover:bg-slate-100` | Icon buttons, table row actions |
-
-Size: always `h-9 px-4` for normal buttons. Icon-only buttons: `h-9 w-9`.
+| Primary | `bg-[#00b074] hover:bg-[#009663] text-white rounded-[14px]` | Main action (เข้าสู่ระบบ, บันทึก, เพิ่มข้อมูล) |
+| Destructive | `bg-[#ff5b5b] hover:bg-[#e64545] text-white rounded-[14px]` | Delete, disable account |
+| Outline Info | `border border-[#2d9cdb] text-[#2d9cdb] hover:bg-[#2d9cdb]/15 rounded-[14px]` | View report, export, view heatmap |
+| Outline Neutral | `border border-[#ebebeb] text-[#464255] hover:bg-[#f3f2f7] rounded-[14px]` | Cancel, secondary actions |
+| Subtle Square Icon | `size-11 rounded-[14px] bg-[#2d9cdb]/15 text-[#2d9cdb]` | Topbar alerts, quick icon actions |
 
 ### 5.2 Badges
 
 ```jsx
-// Fall — red
-<span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-  ล้ม
+// Fall — Coral Red
+<span className="inline-flex items-center rounded-full bg-[#ff5b5b]/15 px-3 py-1 text-xs font-semibold text-[#e64545]">
+  พบการล้ม
 </span>
 
-// Needs recalibration — amber
-<span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-  ต้องสอบเทียบ
+// Needs recalibration — Amber
+<span className="inline-flex items-center rounded-full bg-[#f7c604]/15 px-3 py-1 text-xs font-semibold text-[#d6ab00]">
+  ควรปรับเทียบใหม่
 </span>
 
-// Active / alert on — green
-<span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+// Normal / Alerts ON — Emerald Green
+<span className="inline-flex items-center rounded-full bg-[#00b074]/15 px-3 py-1 text-xs font-semibold text-[#009663]">
   เปิดการแจ้งเตือน
+</span>
+
+// Off / Inactive — Slate
+<span className="inline-flex items-center rounded-full bg-[#5e6c93]/15 px-3 py-1 text-xs font-semibold text-[#5e6c93]">
+  ปิดการใช้งาน
 </span>
 ```
 
-### 5.3 Cards
+### 5.3 Stat Cards (KPI)
 
 ```jsx
-<div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-  {/* content */}
+<div className="rounded-[14px] bg-white p-6 shadow-[0_4px_8px_0_rgb(0_0_0/0.04)] flex items-center gap-5">
+  <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-[#00b074]/15 text-[#00b074]">
+    <Icon className="size-7" />
+  </span>
+  <div>
+    <p className="text-3xl font-bold text-[#464255] leading-none">3</p>
+    <p className="mt-2 text-sm text-[#464255]">เหตุการณ์ล้มวันนี้</p>
+  </div>
 </div>
 ```
 
 ### 5.4 Tables
 
-- Use shadcn/ui `<Table>` component.
-- Header: `bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wide`
-- Row hover: `hover:bg-slate-50`
-- Striped: **not used** (hover is enough)
-- Pagination: `?page=1&pageSize=20` (see `CONVENTIONS.md`)
+- Inside a `rounded-[14px] bg-white shadow-[0_4px_8px_0_rgb(0_0_0/0.04)]` card.
+- Header: `bg-[#f3f2f7]/60 text-xs font-semibold text-[#464255] uppercase`
+- Row hover: `hover:bg-[#f3f2f7]/50`
+- Pagination: `?page=1&pageSize=20` (see `CONVENTIONS.md`).
 
-### 5.5 Forms
-
-- Use shadcn/ui `<Input>`, `<Select>`, `<Checkbox>`, `<Label>`.
-- Always pair `<Label>` with its control via `htmlFor`.
-- Validation errors: `text-red-600 text-xs mt-1` below the field.
-- Form layout: single-column on mobile, two-column (`grid grid-cols-2 gap-4`) on desktop.
-
-### 5.6 Alert banner (fall notification)
+### 5.5 Alert Banner (SSE Real-time Fall)
 
 ```jsx
-// Shown at the top of the fall dashboard when a new fall arrives via SSE
-<div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
-  <AlertTriangleIcon className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-  <div>
-    <p className="text-sm font-semibold text-red-800">พบการล้ม — ห้องน้ำ A, บ้านสมชาย</p>
-    <p className="text-xs text-red-600 mt-0.5">14:32:01 น. · ความเชื่อมั่น 91%</p>
+// Shown at the top of Dashboard / User Home when a new fall arrives via SSE
+<div className="flex items-start gap-3 rounded-[14px] border border-[#ff5b5b]/30 bg-[#ff5b5b]/10 p-4 shadow-[0_4px_8px_0_rgb(0_0_0/0.04)]">
+  <AlertTriangle className="size-5 text-[#e64545] mt-0.5 shrink-0" />
+  <div className="flex-1">
+    <p className="text-sm font-bold text-[#8f2a2a]">พบการล้ม — ห้องน้ำ A, บ้านสมชาย</p>
+    <p className="text-xs text-[#e64545] mt-0.5">14:32:01 น. · ความเชื่อมั่น 91%</p>
   </div>
+  <button className="text-xs font-semibold text-[#e64545] hover:underline">ดู Heatmap</button>
 </div>
 ```
 
 ---
 
-## 6. Icons
+## 6. Navigation Structure
 
-Library: `lucide-react` (included with shadcn/ui).
+### Admin Sidebar (`/admin`)
+- ภาพรวมระบบ (`/admin`)
+- บัญชีผู้ใช้งาน (`/admin/accounts`)
+- ข้อมูลบ้าน (`/admin/houses`)
+- ข้อมูลห้องน้ำ (`/admin/bathrooms`)
+- ผู้ติดตามห้องน้ำ (`/admin/watchers`)
+- บันทึกการใช้งาน (`/admin/audit-log`)
 
-| Icon | Usage |
-|---|---|
-| `HomeIcon` | Houses nav |
-| `BuildingIcon` | Bathrooms nav |
-| `UsersIcon` | Accounts nav |
-| `AlertTriangleIcon` | Fall events, warnings |
-| `ActivityIcon` | Dashboard, real-time |
-| `ClipboardListIcon` | Audit log |
-| `BellIcon` / `BellOffIcon` | Alert toggle |
-| `PencilIcon` | Edit |
-| `TrashIcon` | Delete |
-| `PlusIcon` | Add |
-| `ChevronRightIcon` | Breadcrumbs |
-
-Size: always `h-4 w-4` inline with text, `h-5 w-5` for standalone icon buttons.
+### User Sidebar (`/home`)
+- บ้านของฉัน (`/home`)
+- ตั้งค่าการแจ้งเตือน (`/home/alerts`)
 
 ---
 
-## 7. Navigation structure
+## 7. Date and Time Display
 
-### Admin sidebar
-
-```
-📊 Dashboard          /admin
-👥 Accounts           /admin/accounts
-🏠 Houses             /admin/houses
-🚿 Bathrooms          /admin/bathrooms
-👁 Watchers           /admin/watchers
-📋 Audit Log          /admin/audit-log
-```
-
-### User sidebar
-
-```
-🏠 บ้านของฉัน        /home
-🔔 การแจ้งเตือน       /home/alerts
-```
-
----
-
-## 8. Date and time display
-
-Store UTC in DB (see `CONVENTIONS.md`). Display in `Asia/Bangkok` using:
-
-```js
-// lib/format.js
-export function formatDateTime(utcString) {
-  return new Intl.DateTimeFormat('th-TH', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).format(new Date(utcString))
-}
-```
-
----
-
-## 9. Real-time (SSE) behavior
-
-When a fall event arrives on `/events/stream`:
-
-1. Play a soft alert sound (optional, user can mute).
-2. Show the **red alert banner** (§5.6) at the top of the fall dashboard.
-3. Prepend the new row to the fall events table without a full page reload.
-4. The banner auto-dismisses after 10 s, or when the user clicks ✕.
-
----
-
-## 10. Responsive breakpoints
-
-| Breakpoint | Tailwind | Behavior |
-|---|---|---|
-| Mobile | (default) | Sidebar hidden (hamburger menu), single-column layout |
-| Tablet | `md:` (768 px) | Sidebar visible, two-column forms |
-| Desktop | `lg:` (1024 px) | Full layout, wider tables |
-
----
-
-## 11. Open questions
-
-| # | Question | Owner |
-|---|---|---|
-| Q1 | Should we use a dark sidebar or light? (Current: dark `slate-900`) | พลกฤต |
-| Q2 | Do we need a Thai Buddhist Era (พ.ศ.) date format? | พลกฤต + team |
-| Q3 | Exact chart library: Recharts or something else? (Design.md says Recharts) | พลกฤต |
+Store UTC in DB (see `CONVENTIONS.md`). Display in `Asia/Bangkok` using `lib/format.js`.

@@ -112,6 +112,8 @@ model Baseline {
   recordedAt   DateTime @map("recorded_at") @db.Timestamptz
   // NULL once the uploading admin's account is deleted (WA-2)
   uploadedById Int?     @map("uploaded_by")
+  // At most one current baseline per bathroom: partial unique index
+  // baselines_one_current_per_bathroom (raw SQL in migration 0003)
   isCurrent    Boolean  @default(true) @map("is_current")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -135,6 +137,8 @@ model BathroomWatcher {
   bathroom Bathroom @relation(fields: [bathroomId], references: [id], onDelete: Cascade)
 
   @@id([accountId, bathroomId])
+  // ai-service asks "who watches this bathroom?" on every fall
+  @@index([bathroomId])
   @@map("bathroom_watchers")
 }
 

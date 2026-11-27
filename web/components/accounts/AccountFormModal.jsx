@@ -51,12 +51,19 @@ export default function AccountFormModal({ role, onClose, onCreated }) {
     setPending(true)
     setFormError('')
     setFieldErrors({})
-    const res = await fetch('/api/accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    setPending(false)
+    let res
+    try {
+      res = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch {
+      setFormError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่')
+      return
+    } finally {
+      setPending(false)
+    }
 
     if (res.ok) {
       onCreated(await res.json())

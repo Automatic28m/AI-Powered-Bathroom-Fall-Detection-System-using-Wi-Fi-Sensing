@@ -1,7 +1,7 @@
 'use client'
 
 // /admin/accounts: list (WA-4), add admin/user (WA-1, WA-3), on/off (WA-5), delete admin (WA-2)
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Search, Trash2 } from 'lucide-react'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { formatDate } from '@/lib/format'
@@ -36,7 +36,8 @@ export default function AccountsManager({ currentUserId }) {
   const [actionBusy, setActionBusy] = useState(false)
   const [actionError, setActionError] = useState('')
   const [toggling, setToggling] = useState(/** @type {number | null} */ (null))
-  const [notice, setNotice] = useState('')
+  /** @type {[{ message: string, tone: 'ok' | 'error' } | null, Function]} */
+  const [notice, setNotice] = useState(null)
 
   // Wait for typing to pause before searching
   useEffect(() => {
@@ -47,45 +48,75 @@ export default function AccountsManager({ currentUserId }) {
     return () => clearTimeout(t)
   }, [query])
 
+  // Only the newest request may update the table, so a slow older search can't overwrite it
+  const requestId = useRef(0)
+  /** @type {React.MutableRefObject<ReturnType<typeof setTimeout> | undefined>} */
+  const noticeTimer = useRef(undefined)
+  useEffect(() => () => clearTimeout(noticeTimer.current), [])
+
   const load = useCallback(async () => {
+    const id = ++requestId.current
     setLoading(true)
     setLoadError('')
     const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) })
     if (role) params.set('role', role)
     if (search) params.set('q', search)
-    const res = await fetch(`/api/accounts?${params}`, { cache: 'no-store' })
-    if (res.ok) setData(await res.json())
-    else setLoadError('โหลดรายชื่อบัญชีไม่สำเร็จ')
-    setLoading(false)
+    try {
+      const res = await fetch(`/api/accounts?${params}`, { cache: 'no-store' })
+      const body = res.ok ? await res.json() : null
+      if (id !== requestId.current) return
+      if (body) setData(body)
+      else setLoadError('โหลดรายชื่อบัญชีไม่สำเร็จ')
+    } catch {
+      if (id === requestId.current) setLoadError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่')
+    } finally {
+      if (id === requestId.current) setLoading(false)
+    }
   }, [page, role, search])
 
   useEffect(() => {
     load()
   }, [load])
 
-  /** @param {string} message */
-  function flash(message) {
-    setNotice(message)
-    setTimeout(() => setNotice(''), 3000)
+  /** @param {string} message @param {'ok' | 'error'} [tone] */
+  function flash(message, tone = 'ok') {
+    clearTimeout(noticeTimer.current)
+    setNotice({ message, tone })
+    noticeTimer.current = setTimeout(() => setNotice(null), tone === 'error' ? 5000 : 3000)
   }
 
-  /** @param {AccountItem} account @param {boolean} isActive */
+  /**
+   * @param {AccountItem} account
+   * @param {boolean} isActive
+   * @returns {Promise<string>} an error message, or '' on success
+   */
   async function setActive(account, isActive) {
     setToggling(account.id)
-    const res = await fetch(`/api/accounts/${account.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive }),
-    })
-    setToggling(null)
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: {} }))
-      return error?.message ?? 'บันทึกไม่สำเร็จ'
+    try {
+      const res = await fetch(`/api/accounts/${account.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: {} }))
+        return error?.message ?? 'บันทึกไม่สำเร็จ'
+      }
+      const updated = await res.json()
+      setData((d) => ({ ...d, items: d.items.map((a) => (a.id === updated.id ? updated : a)) }))
+      flash(isActive ? `เปิดใช้งานบัญชี ${account.username} แล้ว` : `ปิดใช้งานบัญชี ${account.username} แล้ว`)
+      return ''
+    } catch {
+      return 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่'
+    } finally {
+      setToggling(null)
     }
-    const updated = await res.json()
-    setData((d) => ({ ...d, items: d.items.map((a) => (a.id === updated.id ? updated : a)) }))
-    flash(isActive ? `เปิดใช้งานบัญชี ${account.username} แล้ว` : `ปิดใช้งานบัญชี ${account.username} แล้ว`)
-    return ''
+  }
+
+  /** Turning on needs no confirmation, so show its error as a notice. @param {AccountItem} account */
+  async function turnOn(account) {
+    const error = await setActive(account, true)
+    if (error) flash(error, 'error')
   }
 
   async function confirmAction() {
@@ -97,13 +128,17 @@ export default function AccountsManager({ currentUserId }) {
     if (kind === 'disable') {
       error = await setActive(account, false)
     } else {
-      const res = await fetch(`/api/accounts/${account.id}`, { method: 'DELETE' })
-      if (res.ok) {
-        flash(`ลบบัญชี ${account.username} แล้ว`)
-        await load()
-      } else {
-        const body = await res.json().catch(() => ({ error: {} }))
-        error = body.error?.message ?? 'ลบไม่สำเร็จ'
+      try {
+        const res = await fetch(`/api/accounts/${account.id}`, { method: 'DELETE' })
+        if (res.ok) {
+          flash(`ลบบัญชี ${account.username} แล้ว`)
+          await load()
+        } else {
+          const body = await res.json().catch(() => ({ error: {} }))
+          error = body.error?.message ?? 'ลบไม่สำเร็จ'
+        }
+      } catch {
+        error = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่'
       }
     }
     setActionBusy(false)
@@ -137,10 +172,14 @@ export default function AccountsManager({ currentUserId }) {
 
       {notice && (
         <p
-          role="status"
-          className="rounded-[14px] bg-[#00b074]/15 px-4 py-3 text-sm font-medium text-[#009663]"
+          role={notice.tone === 'error' ? 'alert' : 'status'}
+          className={`rounded-[14px] px-4 py-3 text-sm font-medium ${
+            notice.tone === 'error'
+              ? 'bg-[#ff5b5b]/15 text-[#e64545]'
+              : 'bg-[#00b074]/15 text-[#009663]'
+          }`}
         >
-          {notice}
+          {notice.message}
         </p>
       )}
 
@@ -251,7 +290,7 @@ export default function AccountsManager({ currentUserId }) {
                             a.isActive
                               ? (setActionError(''),
                                 setPendingAction({ kind: 'disable', account: a }))
-                              : setActive(a, true)
+                              : turnOn(a)
                           }
                           className="flex items-center gap-2 disabled:opacity-50"
                         >

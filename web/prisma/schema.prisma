@@ -1,0 +1,258 @@
+// Prisma schema — single source of truth for the database (M2: Schema Frozen)
+// See docs/Design.md §5 and docs/CONVENTIONS.md §5 for rules.
+//
+// IMPORTANT: Every change requires a PR reviewed by พัลลภ + พลกฤต (both).
+// Python (ai-service) reads and writes these exact snake_case tables and columns.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum AlertStatus {
+  sent
+  failed
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+}
+
+// -------------------------------------------------------------
+// 1. Accounts (Better Auth `user` table mapped onto `accounts`)
+//    - The password hash lives in auth_accounts.password (Better Auth
+//      credential provider), not here.
+//    - Better Auth config: numeric IDs, user.fields.name -> fullName,
+//      username plugin (username + displayUsername).
+// -------------------------------------------------------------
+model Account {
+  id              Int      @id @default(autoincrement())
+  role            Role     @default(user)
+  username        String   @unique
+  displayUsername String?  @map("display_username")
+  email           String   @unique
+  emailVerified   Boolean  @default(false) @map("email_verified")
+  image           String?
+  fullName        String   @map("full_name")
+  phone           String
+  address         String?
+  houseId         Int?     @map("house_id")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  createdById     Int?     @map("created_by")
+
+  house             House?            @relation(fields: [houseId], references: [id], onDelete: SetNull)
+  createdBy         Account?          @relation("AccountCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAccounts   Account[]         @relation("AccountCreator")
+  uploadedBaselines Baseline[]
+  watchedBathrooms  BathroomWatcher[]
+  alertDeliveries   AlertDelivery[]
+  auditLogs         AuditLog[]
+  sessions          Session[]
+  authAccounts      AuthAccount[]
+
+  @@map("accounts")
+}
+
+// -------------------------------------------------------------
+// 2. Houses
+// -------------------------------------------------------------
+model House {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  accounts  Account[]
+  bathrooms Bathroom[]
+
+  @@map("houses")
+}
+
+// -------------------------------------------------------------
+// 3. Bathrooms
+// -------------------------------------------------------------
+model Bathroom {
+  id               Int       @id @default(autoincrement())
+  houseId          Int       @map("house_id")
+  name             String
+  rxMac            String    @unique @map("rx_mac")
+  lastCalibratedAt DateTime? @map("last_calibrated_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  house      House             @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  baselines  Baseline[]
+  watchers   BathroomWatcher[]
+  fallEvents FallEvent[]
+
+  @@map("bathrooms")
+}
+
+// -------------------------------------------------------------
+// 4. Baselines
+// -------------------------------------------------------------
+model Baseline {
+  id           Int      @id @default(autoincrement())
+  bathroomId   Int      @map("bathroom_id")
+  filePath     String   @map("file_path")
+  recordedAt   DateTime @map("recorded_at") @db.Timestamptz
+  // NULL once the uploading admin's account is deleted (WA-2)
+  uploadedById Int?     @map("uploaded_by")
+  isCurrent    Boolean  @default(true) @map("is_current")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  bathroom   Bathroom @relation(fields: [bathroomId], references: [id], onDelete: Cascade)
+  uploadedBy Account? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@map("baselines")
+}
+
+// -------------------------------------------------------------
+// 5. Bathroom Watchers (User <-> Bathroom M:N + alerts toggle)
+// -------------------------------------------------------------
+model BathroomWatcher {
+  accountId     Int      @map("account_id")
+  bathroomId    Int      @map("bathroom_id")
+  alertsEnabled Boolean  @default(true) @map("alerts_enabled")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  account  Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  bathroom Bathroom @relation(fields: [bathroomId], references: [id], onDelete: Cascade)
+
+  @@id([accountId, bathroomId])
+  @@map("bathroom_watchers")
+}
+
+// -------------------------------------------------------------
+// 6. Fall Events (written by Python ai-service, read by Next.js)
+// -------------------------------------------------------------
+model FallEvent {
+  id           Int      @id @default(autoincrement())
+  bathroomId   Int      @map("bathroom_id")
+  detectedAt   DateTime @map("detected_at") @db.Timestamptz
+  confidence   Float
+  heatmapPath  String   @map("heatmap_path")
+  modelVersion String   @map("model_version")
+  result       Json
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  bathroom        Bathroom        @relation(fields: [bathroomId], references: [id], onDelete: Cascade)
+  alertDeliveries AlertDelivery[]
+
+  @@index([bathroomId, detectedAt(sort: Desc)])
+  @@map("fall_events")
+}
+
+// -------------------------------------------------------------
+// 7. Alert Deliveries (written by Python ai-service)
+// -------------------------------------------------------------
+model AlertDelivery {
+  id          Int         @id @default(autoincrement())
+  fallEventId Int         @map("fall_event_id")
+  accountId   Int         @map("account_id")
+  channel     String      @default("email")
+  status      AlertStatus
+  sentAt      DateTime?   @map("sent_at") @db.Timestamptz
+  error       String?
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  fallEvent FallEvent @relation(fields: [fallEventId], references: [id], onDelete: Cascade)
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("alert_deliveries")
+}
+
+// -------------------------------------------------------------
+// 8. Audit Logs (written by Next.js in same transaction)
+// -------------------------------------------------------------
+model AuditLog {
+  id         Int         @id @default(autoincrement())
+  // NULL once the actor's account is deleted (WA-2). The actor's username is
+  // also copied into details.actorUsername so the log stays readable.
+  actorId    Int?        @map("actor_id")
+  action     AuditAction
+  entityType String      @map("entity_type")
+  entityId   String      @map("entity_id")
+  details    Json
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz
+
+  actor Account? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// -------------------------------------------------------------
+// 9. Settings (key-value config shared by Next.js and Python)
+// -------------------------------------------------------------
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("settings")
+}
+
+// -------------------------------------------------------------
+// Better Auth supporting tables
+// -------------------------------------------------------------
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    Int      @map("user_id")
+
+  user Account @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model AuthAccount {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                Int       @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  user Account @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_accounts")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("verifications")
+}

@@ -1,0 +1,25 @@
+# Ignore rules for web/ (GIT_FLOW.md §5). Personal or editor files go in .git/info/exclude.
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+
+# Third-party UI template used as a design reference only (not shipped)
+sedap/
+
+# Uploaded or generated files (live on the server under /data)
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,8 @@
+// Prettier config — matches CONVENTIONS.md
+module.exports = {
+  semi: false,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'es5',
+  printWidth: 100,
+}

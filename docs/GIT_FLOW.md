@@ -74,7 +74,7 @@ chore(infra): pin vllm version in compose
 ## 4. Pull requests
 
 1. Push your branch, open a PR into `develop`.
-2. Fill in: **what** changed, **why**, **how to test**, and the linked PRD IDs (e.g. `WA-9`).
+2. Fill in the template ([`.github/pull_request_template.md`](../.github/pull_request_template.md)): **what** changed, **why**, **how to test**, and the linked PRD IDs (e.g. `WA-9`).
 3. **At least 1 approval** from another member before merging.
 4. **Squash and merge.** The PR title becomes the commit, so use the commit format for it.
 5. Delete the branch.

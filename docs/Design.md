@@ -100,7 +100,7 @@ UDP packet → per-room ring buffer (by Rx MAC) → every 1 s:
 
 ```
 accounts            id PK, role ('admin'|'user'), username UQ, email UQ,
-                    password_hash, full_name, phone, address NULL,
+                    full_name, phone, address NULL,
                     house_id FK→houses NULL, is_active, created_at, created_by FK→accounts
 houses              id PK, name, address, created_at
 bathrooms           id PK, house_id FK→houses, name, rx_mac UQ,
@@ -117,7 +117,7 @@ audit_logs          id PK, actor_id FK→accounts, action ('create'|'update'|'de
 settings            key PK, value JSONB
 ```
 
-Better Auth adds its own `session` / `account` / `verification` tables. Its `user` table is mapped onto `accounts`.
+Better Auth adds its own tables, named `sessions`, `auth_accounts` and `verifications` in the DB. Its `user` table is mapped onto `accounts`. The password hash (scrypt) lives in `auth_accounts.password` (`provider_id = 'credential'`), not in `accounts`. Every id is a serial integer (`advanced.database.generateId = "serial"`).
 
 ### 5.2 Rules
 

@@ -210,9 +210,11 @@ model Setting {
 
 // -------------------------------------------------------------
 // Better Auth supporting tables
+// IDs are serial integers because Better Auth runs with
+// advanced.database.generateId = "serial" (applies to every auth table).
 // -------------------------------------------------------------
 model Session {
-  id        String   @id
+  id        Int      @id @default(autoincrement())
   expiresAt DateTime @map("expires_at") @db.Timestamptz
   token     String   @unique
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -227,7 +229,7 @@ model Session {
 }
 
 model AuthAccount {
-  id                    String    @id
+  id                    Int       @id @default(autoincrement())
   accountId             String    @map("account_id")
   providerId            String    @map("provider_id")
   userId                Int       @map("user_id")
@@ -247,7 +249,7 @@ model AuthAccount {
 }
 
 model Verification {
-  id         String    @id
+  id         Int       @id @default(autoincrement())
   identifier String
   value      String
   expiresAt  DateTime  @map("expires_at") @db.Timestamptz

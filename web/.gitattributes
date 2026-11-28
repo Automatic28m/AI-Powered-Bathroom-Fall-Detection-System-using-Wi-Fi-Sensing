@@ -1,7 +1,10 @@
-# Keep LF line endings for web/ on every OS (CONVENTIONS.md §1)
+# LF line endings for web/ on every OS (CONVENTIONS.md §1)
 * text=auto eol=lf
 
 *.png binary
 *.jpg binary
-*.svg text
+*.jpeg binary
+*.webp binary
 *.ico binary
+*.woff2 binary
+*.svg text

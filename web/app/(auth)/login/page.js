@@ -1,7 +1,16 @@
 // Login page — WU-1, adapted from Sedap split-screen auth layout
 // No public sign-up. Admins create all accounts (Scope 1.3.6.1).
+import { redirect } from 'next/navigation'
+import { getCurrentUser, HOME_BY_ROLE } from '@/lib/session'
+import LoginForm from './LoginForm'
 
-export default function LoginPage() {
+export const metadata = { title: 'เข้าสู่ระบบ — FallWatch.' }
+
+export default async function LoginPage() {
+  // Already logged in: go straight to the right dashboard
+  const user = await getCurrentUser()
+  if (user) redirect(HOME_BY_ROLE[user.role])
+
   return (
     <main className="grid min-h-dvh bg-[#f3f2f7] lg:grid-cols-[minmax(0,36rem)_1fr]">
       {/* Left brand panel (Sedap auth-layout) */}
@@ -63,46 +72,7 @@ export default function LoginPage() {
               กรุณากรอกชื่อผู้ใช้หรืออีเมล และรหัสผ่านเพื่อเข้าใช้งาน
             </p>
 
-            {/* TODO(phonlakrit): wire up Better Auth sign-in (W3–W5) */}
-            <form className="mt-7 space-y-5">
-              <div>
-                <label
-                  htmlFor="identifier"
-                  className="mb-1.5 block text-xs font-medium text-[#464255]"
-                >
-                  Username หรือ Email
-                </label>
-                <input
-                  id="identifier"
-                  name="identifier"
-                  type="text"
-                  placeholder="you@example.com"
-                  required
-                  className="sedap-input"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="mb-1.5 block text-xs font-medium text-[#464255]"
-                >
-                  รหัสผ่าน
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  className="sedap-input"
-                />
-              </div>
-
-              <button type="submit" className="sedap-btn-primary w-full">
-                เข้าสู่ระบบ
-              </button>
-            </form>
+            <LoginForm />
 
             <p className="mt-6 text-center text-xs text-[#a3a3a3]">
               หากยังไม่มีบัญชี กรุณาติดต่อผู้ดูแลระบบเพื่อสร้างบัญชีผู้ใช้งาน

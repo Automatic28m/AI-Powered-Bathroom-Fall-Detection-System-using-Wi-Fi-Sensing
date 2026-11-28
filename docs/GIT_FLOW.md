@@ -1,6 +1,6 @@
 # Git Flow
 
-How we use Git and GitHub. Keep it simple: **one main branch, short feature branches, PRs for everything.**
+How we use Git and GitHub. Keep it simple: **one integration branch (`develop`), short feature branches, PRs for everything.**
 
 ## 1. Repo layout (one repo for everything)
 
@@ -9,18 +9,19 @@ How we use Git and GitHub. Keep it simple: **one main branch, short feature bran
 ├─ firmware/     ESP32 Tx/Rx (ESP-IDF, C)          ศักดา
 ├─ gateway/      Pi Zero 2 W serial → UDP (Python)  ศักดา
 ├─ ai/           AI service + training (Python)     พัลลภ
-├─ web/          Next.js app (JavaScript)           พลกฤต
+├─ web/          Next.js app (JavaScript)           พลกฤต   ← project README.md lives here
 ├─ infra/        docker-compose, cloudflared, WSL2  พัลลภ
 ├─ docs/         PRD, Design, Contract, etc.        all
-└─ README.md
+└─ .github/      PR template (the only file kept at the root)
 ```
 
 ## 2. Branches
 
-We use **GitHub Flow**:
+We use **GitHub Flow on `develop`**, with `main` for milestone releases:
 
-- **`main`**: always works. Protected: no direct pushes, only merged PRs.
-- **Short-lived branches** off `main`, merged back with a PR. Delete them after merging.
+- **`develop`**: the default branch. Every feature branch starts here and merges back here. Protected: no direct pushes, only merged PRs.
+- **`main`**: always works, demo-ready. Updated only at milestones by a PR from `develop` into `main` (see §6).
+- **Short-lived branches** off `develop`, merged back with a PR. Delete them after merging.
 
 Branch name: `<type>/<area>-<short-description>`
 
@@ -72,8 +73,8 @@ chore(infra): pin vllm version in compose
 
 ## 4. Pull requests
 
-1. Push your branch, open a PR into `main`.
-2. Fill in: **what** changed, **why**, **how to test**, and the linked PRD IDs (e.g. `WA-9`).
+1. Push your branch, open a PR into `develop`.
+2. Fill in the template ([`.github/pull_request_template.md`](../.github/pull_request_template.md)): **what** changed, **why**, **how to test**, and the linked PRD IDs (e.g. `WA-9`).
 3. **At least 1 approval** from another member before merging.
 4. **Squash and merge.** The PR title becomes the commit, so use the commit format for it.
 5. Delete the branch.
@@ -100,15 +101,15 @@ chore(infra): pin vllm version in compose
 | CSI recordings, datasets | Server `/data/recordings/` + a shared drive backup |
 | Model weights, LoRA adapters | Server `/data/models/` |
 | Heatmap images, baselines | Server `/data/` |
-| `node_modules/`, `__pycache__/`, `.venv/`, `build/`, `.next/` | ignored (see `.gitignore`) |
+| `node_modules/`, `__pycache__/`, `.venv/`, `build/`, `.next/` | ignored by the `.gitignore` inside each folder (there is no root `.gitignore`) |
 
-Personal or editor-specific files go in your own `.git/info/exclude`, not in the shared `.gitignore`.
+Each folder keeps its own `.gitignore`, and it **must** ignore `.env` and `.env.*` (keep `!.env.example`). A new folder (`gateway/`, `ai/`, `infra/`) adds one in its first PR. Personal or editor-specific files go in your own `.git/info/exclude`, not in a shared `.gitignore`.
 
 If you commit a secret by mistake: **change the secret right away**, then tell the team. Deleting the commit isn't enough.
 
 ## 6. Tags (milestones)
 
-Tag `main` at each milestone so we can always get back to a working demo:
+At each milestone, merge `develop` into `main` with a PR, then tag `main` so we can always get back to a working demo:
 
 | Tag | When |
 |---|---|
@@ -138,9 +139,9 @@ git config user.email "<your GitHub email>"
 ## 8. Daily routine
 
 ```bash
-git switch main && git pull              # start from latest
+git switch develop && git pull           # start from latest
 git switch -c feat/web-houses-page       # new branch
 # ...work, commit often...
-git fetch origin && git rebase origin/main   # stay up to date
+git fetch origin && git rebase origin/develop   # stay up to date
 git push -u origin feat/web-houses-page  # then open a PR
 ```

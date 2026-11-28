@@ -1,6 +1,24 @@
+# Ignore rules for firmware/ (GIT_FLOW.md §5). Each folder keeps its own .gitignore.
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Build output
 build/
+
+# Python (tools/)
 __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
 .ruff_cache/
+
+# Raw CSI recordings (they live on the server under /data/recordings)
+recordings/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

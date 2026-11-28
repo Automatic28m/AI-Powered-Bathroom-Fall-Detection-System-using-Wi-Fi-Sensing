@@ -29,3 +29,24 @@ export function writeAudit(tx, actor, action, entityType, entityId, details = {}
     },
   })
 }
+
+/**
+ * The fields that changed, as { field: { from, to } }, for an update's audit details.
+ * Only keys present in `input` are compared. Dates are compared by time.
+ *
+ * @param {Record<string, unknown>} before  the row before the update
+ * @param {Record<string, unknown>} input   the validated update input
+ * @returns {Record<string, { from: unknown, to: unknown }>}
+ */
+export function changesOf(before, input) {
+  /** @type {Record<string, { from: unknown, to: unknown }>} */
+  const changes = {}
+  for (const [key, to] of Object.entries(input)) {
+    if (to === undefined) continue
+    const from = before[key]
+    const same =
+      from instanceof Date && to instanceof Date ? from.getTime() === to.getTime() : from === to
+    if (!same) changes[key] = { from: from ?? null, to: to ?? null }
+  }
+  return changes
+}

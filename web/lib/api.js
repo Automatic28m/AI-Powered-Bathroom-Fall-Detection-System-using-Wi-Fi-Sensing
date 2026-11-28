@@ -52,6 +52,10 @@ export function withApi(handler) {
           return errorResponse(409, 'CONFLICT', 'ข้อมูลนี้มีอยู่ในระบบแล้ว', { fields: target })
         }
         if (err.code === 'P2025') return errorResponse(404, 'NOT_FOUND', 'ไม่พบข้อมูล')
+        // A foreign key points at a row that doesn't exist (or was just deleted)
+        if (err.code === 'P2003') {
+          return errorResponse(400, 'INVALID_REFERENCE', 'ข้อมูลที่อ้างถึงไม่มีอยู่ในระบบ')
+        }
       }
       console.error(err)
       return errorResponse(500, 'INTERNAL', 'เกิดข้อผิดพลาดในระบบ')
@@ -70,6 +74,45 @@ export function parsePaging(params) {
     Math.max(1, Number.parseInt(params.get('pageSize') ?? '20', 10) || 20)
   )
   return { page, pageSize, skip: (page - 1) * pageSize, take: pageSize }
+}
+
+/**
+ * Read a JSON body, or throw 400 when it isn't valid JSON.
+ * @param {Request} request
+ */
+export async function readJson(request) {
+  try {
+    return await request.json()
+  } catch {
+    throw new ApiError(400, 'INVALID_JSON', 'ข้อมูลที่ส่งมาไม่ใช่ JSON')
+  }
+}
+
+/**
+ * Read a multipart/form-data body, or throw 400.
+ * @param {Request} request
+ */
+export async function readForm(request) {
+  try {
+    return await request.formData()
+  } catch {
+    throw new ApiError(400, 'INVALID_FORM', 'ต้องส่งข้อมูลแบบ multipart/form-data')
+  }
+}
+
+/**
+ * The text fields of a FormData as a plain object (files are left out).
+ * Empty strings become undefined, so optional zod fields treat them as missing.
+ * @param {FormData} form
+ * @param {string[]} names
+ */
+export function formFields(form, names) {
+  return Object.fromEntries(
+    names.map((name) => {
+      const value = form.get(name)
+      return [name, typeof value === 'string' && value.trim() !== '' ? value : undefined]
+    })
+  )
 }
 
 /**

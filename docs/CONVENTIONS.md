@@ -79,7 +79,7 @@ ai/
 | Types | No TypeScript, so use **JSDoc** on shared functions and data shapes (`/** @param {string} id */`) |
 | Validation | **zod** schemas for every API request body and query. Never trust input. |
 | Components | Server Components by default. Add `"use client"` only when needed (state, events, SSE). |
-| Styling | Tailwind + shadcn/ui only. No inline style objects. Colors and spacing from `DesignSystem.md`. |
+| Styling | Tailwind + the Sedap-based component classes in `app/globals.css` (`sedap-card`, `sedap-input`, `sedap-btn-primary`, …). No inline style objects. Colors and spacing from `DesignSystem.md`. |
 | Secrets | Only `NEXT_PUBLIC_*` env vars reach the browser. Never put secrets in them. |
 
 `web/` layout:

@@ -49,7 +49,7 @@ into `develop` using the template in `.github/` ([`GIT_FLOW.md`](../docs/GIT_FLO
 ## Progress
 
 Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web app + docs).
-**Current target: up to W3–W5, Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5).** W5–W7 hasn't started.
+**Current target: W5–W7, houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5.** Code done and tested; not committed or in a PR yet.
 
 | Week    | Task                                                                              | Status                                                                                                                                                         |
 | ------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web ap
 | W1–W2   | `DesignSystem.md` + wireframes of the main pages                                  | ✅ Done                                                                                                                                                        |
 | W2–W3   | Prisma schema + migrations → **M2**                                               | ✅ `0001_init` merged into `develop` (PR #4). `0002_auth_serial_ids` + `0003_watcher_and_baseline_indexes` waiting for review by พัลลภ → then M2 is frozen.     |
 | W3–W5   | Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5)          | ✅ Done and tested end to end. Waiting for PR review.                                                                                                          |
-| W5–W7   | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ⬜ Not started                                                                                                                                                 |
+| W5–W7   | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ✅ Done and tested end to end (42/42). M5 once it's merged.                                                                                                    |
 | W8–W10  | Fall dashboard, history, chart, heatmap view, SSE (WA-16)                         | ⬜ Not started                                                                                                                                                 |
 | W9–W10  | User pages (WU-1 to WU-4)                                                         | ⬜ Not started                                                                                                                                                 |
 | W10     | Audit log page (WA-17)                                                            | ⬜ Not started                                                                                                                                                 |
@@ -173,10 +173,58 @@ All W1–W5 work is on one branch, **`docs/web-design-system`**, and goes into `
 `feat(web): add better auth login, roles and accounts pages` (repo setup, `0002` + `0003` migrations, WA-1 to WA-5, WU-1).
 Reviewers: **พัลลภ + พลกฤต** (the PR touches `prisma/`).
 
-### Next (W5–W7, not started)
+**W5–W7: houses, bathrooms, baseline upload, watchers (→ M5)**
 
-- Houses (WA-6 to WA-8), bathrooms + baseline upload (WA-9 to WA-12), watchers (WA-13 to WA-15) → **M5**
-- Reuse `lib/api.js`, `lib/session.js`, `lib/audit.js`, `components/Modal.jsx` and `components/ConfirmDialog.jsx`.
+- **Houses** `/admin/houses` (Wireframes.md §4), API `GET`/`POST /api/houses`, `GET`/`PATCH /api/houses/:id`:
+
+  | PRD  | What you can do                                                                                                                                                           |
+  | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | WA-6 | "+ เพิ่มบ้านใหม่": name and address. The date added is set automatically.                                                                                                     |
+  | WA-7 | Table of name, address, number of bathrooms, number of users and date added, with search. The eye button shows the house's bathrooms (with calibration status) and users. |
+  | WA-8 | Edit the name and address.                                                                                                                                                |
+
+  There's no delete: the PRD has no "delete a house" requirement.
+
+- **Bathrooms** `/admin/bathrooms` (Wireframes.md §5), API `GET`/`POST /api/bathrooms`, `GET`/`PATCH /api/bathrooms/:id`, `POST /api/bathrooms/:id/baseline`:
+
+  | PRD   | What you can do                                                                                                                                |
+  | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+  | WA-9  | "+ เพิ่มห้องน้ำ": house, room name, Rx MAC and an optional first baseline (`.npy`). The room and its baseline are saved together.                  |
+  | WA-10 | Table of name, house, Rx MAC, last calibration, calibration status, number of watchers and date added. House filter and search.                |
+  | WA-11 | Status "ปกติ", "⚠️ ควรปรับเทียบใหม่" (once `recalibration_months` have passed, default 6) or "ยังไม่ได้ปรับเทียบ" (no baseline yet), with the due date. |
+  | WA-12 | "แก้ไข / Baseline": change the name or Rx MAC, and upload a new baseline.                                                                       |
+  - Rx MAC is stored lowercase with colons. `AA-BB-CC-DD-EE-FF` and `aabbccddeeff` are accepted too. A MAC already used by another room gets 409.
+  - The house of a bathroom can't be changed, because watchers must stay inside one house.
+  - **Baseline upload** ([`lib/baselines.js`](lib/baselines.js)): only real NumPy files (checked by the `\x93NUMPY` header), up to 20 MB. The file goes to `DATA_DIR/baselines/<bathroom_id>/<timestamp>.npy`, and `baselines.file_path` stores the path **relative to `DATA_DIR`** (`baselines/3/20261128T074205123Z.npy`). In one transaction: the old baseline gets `is_current = false`, the new row is added, `last_calibrated_at` is set to the recording time, `NOTIFY baseline_changed` (payload = bathroom id) is sent for ai-service, and the audit row is written. If anything fails, the file is deleted again. Old baselines stay as history.
+  - "Recorded at" can be set when the baseline was recorded earlier. It defaults to now and can't be in the future.
+
+- **Watchers** `/admin/watchers` (Wireframes.md §6), API `GET`/`POST`/`DELETE /api/watchers`:
+
+  | PRD   | What you can do                                                                                                       |
+  | ----- | --------------------------------------------------------------------------------------------------------------------- |
+  | WA-13 | "+ จับคู่ผู้ใช้งานกับห้องน้ำ" or the pencil button: pick the user's house.                                                     |
+  | WA-14 | Tick the bathrooms of that house the user watches. New pairings start with alerts on.                                 |
+  | WA-15 | Untick to remove, or the bin button to remove one pairing. Rooms that stay keep the user's own alerts on/off setting. |
+  - A user can only watch bathrooms in their own house; the API refuses anything else with 400. Moving a user to another house removes their pairings in the old house.
+  - `POST /api/watchers` takes `{ accountId, houseId, bathroomIds }`, the full list of bathrooms the user should watch. `DELETE /api/watchers?accountId=&bathroomId=` removes one pairing.
+  - The accounts table (WA-4) now shows the linked house and the number of bathrooms watched.
+
+- **Audit logging:** every create, update and delete writes its `audit_logs` row in the same transaction. Entity types: `house`, `bathroom`, `baseline`, `bathroom_watcher` (id `<accountId>:<bathroomId>`) and `account` (house link). Updates store only the fields that changed, as `{ from, to }`. The audit log page itself (WA-17) is W10.
+- **Shared UI pieces** for the admin pages: `Notice`, `Pagination`, `TableStates`, `Field`, [`lib/client-api.js`](lib/client-api.js) (fetch that never throws) and [`lib/use-list.js`](lib/use-list.js) (paged list + search box). The accounts page still has its own copies; it can move onto them later.
+
+### End-to-end test (W5–W7)
+
+Run on `npm run dev` with PostgreSQL 16 on 2026-11-28, logged in as `testadmin`. Test data, audit rows and files were removed afterwards. **42/42 passed.** ESLint and Prettier are clean.
+
+| Area           | Checks                                                                                                                                                                                                                                                                           |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WA-6 to WA-8   | Add, list, search, details, edit. Empty fields or bad JSON get 400; an unknown id gets 404; an empty edit gets 400.                                                                                                                                                              |
+| WA-9           | Add with and without a baseline. MAC normalised. Duplicate MAC 409, bad MAC 400, unknown house 404, JSON instead of a form 400. A fake `.npy` or a wrong extension gets 400, **and no bathroom is saved**.                                                                       |
+| WA-10 / WA-11  | House filter. A baseline recorded 6.5 months ago shows `due`; after a new upload it shows `ok`.                                                                                                                                                                                  |
+| WA-12          | Edit name and MAC; a MAC of another room gets 409. A new baseline: one current row, the old one kept, `last_calibrated_at` updated, file written under `DATA_DIR/baselines/<id>/`. A future date or a missing file gets 400.                                                     |
+| WA-13 to WA-15 | Link a house and two bathrooms; house details then show the user. A bathroom of another house, bathrooms without a house, or an admin account get 400. Changing the list keeps the alerts setting of rooms that stay. Delete one pairing (204, then 404). Move to another house. |
+| Roles          | A user gets 403 on all three APIs; no login gets 401. The three admin pages render for an admin.                                                                                                                                                                                 |
+| Audit          | Rows for `house`, `bathroom`, `baseline`, `bathroom_watcher` (create/delete) and `account` (house link). A failed create writes no row.                                                                                                                                          |
 
 ## Stack
 
@@ -196,23 +244,37 @@ web/
 ├─ app/
 │  ├─ (auth)/login/      Login page + LoginForm (WU-1)
 │  ├─ admin/             Admin pages (WA-*), admin only
-│  │  └─ accounts/       Accounts page (WA-1 to WA-5)
+│  │  ├─ accounts/       Accounts page (WA-1 to WA-5)
+│  │  ├─ houses/         Houses page (WA-6 to WA-8)
+│  │  ├─ bathrooms/      Bathrooms + baseline upload (WA-9 to WA-12)
+│  │  └─ watchers/       Who watches which bathroom (WA-13 to WA-15)
 │  ├─ home/              User pages (WU-*), user only
 │  └─ api/
 │     ├─ auth/[...all]/  Better Auth endpoints (sign-in, sign-out, session)
-│     └─ accounts/       Accounts API (WA-1 to WA-5)
+│     ├─ accounts/       Accounts API (WA-1 to WA-5)
+│     ├─ houses/         Houses API (WA-6 to WA-8)
+│     ├─ bathrooms/      Bathrooms API + [id]/baseline upload (WA-9 to WA-12)
+│     └─ watchers/       Watchers API (WA-13 to WA-15)
 ├─ components/
 │  ├─ AppShell, Sidebar, Topbar (logout)
-│  ├─ Modal, ConfirmDialog
-│  └─ accounts/          AccountsManager, AccountFormModal
+│  ├─ Modal, ConfirmDialog, Notice, Pagination, TableStates, Field
+│  ├─ accounts/          AccountsManager, AccountFormModal
+│  ├─ houses/            HousesManager, HouseFormModal, HouseDetailModal, useHouseOptions
+│  ├─ bathrooms/         BathroomsManager, BathroomFormModal, CalibrationBadge
+│  └─ watchers/          WatchersManager, WatcherFormModal
 ├─ lib/
 │  ├─ db.js              Prisma client singleton
 │  ├─ auth.js            Better Auth server config
 │  ├─ auth-client.js     Better Auth browser client
 │  ├─ session.js         getCurrentUser, requirePageRole, requireApiRole
-│  ├─ api.js             JSON errors, withApi wrapper, paging
-│  ├─ audit.js           writeAudit (same transaction as the change)
+│  ├─ api.js             JSON errors, withApi wrapper, paging, body readers
+│  ├─ audit.js           writeAudit + changesOf (same transaction as the change)
 │  ├─ accounts.js        Account list shape
+│  ├─ houses.js          House list shape
+│  ├─ bathrooms.js       Bathroom list shape + calibration status (WA-11)
+│  ├─ baselines.js       Baseline file check + save (DATA_DIR, NOTIFY baseline_changed)
+│  ├─ client-api.js      Browser fetch helper (never throws)
+│  ├─ use-list.js        Paged list + debounced search hooks
 │  ├─ format.js          Date/time formatters (Asia/Bangkok)
 │  └─ validators/        zod schemas for API inputs
 ├─ middleware.js         No session cookie on /admin or /home → /login
@@ -271,7 +333,7 @@ npm run db:seed:test
 | User  | `testuser`  | `testuser@fallwatch.local`  | `123456789` | `/home`  |
 
 - Running the command again resets both passwords to `123456789` and turns the accounts back on. Use it if you turned `testuser` off while testing WA-5.
-- `testuser` has no house yet. Linking a house (WA-13) comes in W5–W7.
+- It also adds **บ้านทดสอบ** with two bathrooms (`02:00:00:00:00:01`, `02:00:00:00:00:02`, no baseline yet). If `testuser` has no house, it's linked to บ้านทดสอบ and watches the first bathroom. Changes you make in the pages are kept on the next run.
 - **Never run it on the public server.** The password is in this README, so anyone could log in. The script ([`prisma/seed-test-accounts.mjs`](prisma/seed-test-accounts.mjs)) refuses to run when `NODE_ENV=production`.
 
 **Your own admin:** `SEED_ADMIN_USERNAME` (or `SEED_ADMIN_EMAIL`) and `SEED_ADMIN_PASSWORD` from `.env`, created by `npx prisma db seed`. Create the other accounts at `/admin/accounts`.
@@ -286,7 +348,16 @@ If you type a wrong password more than 5 times in a minute, wait a minute before
 4. Turn the user off (WA-5), then try to log in as that user in a private window. You should see "บัญชีนี้ถูกปิดการใช้งาน". Turn it back on and log in: the user lands on `/home`, and opening `/admin` sends them back.
 5. Delete the other admin (WA-2). Your own row has no delete button.
 
-The other sidebar pages (houses, bathrooms, watchers, audit log, alert settings) are W5–W10 work, so they show 404 for now.
+### Quick review checklist (W5–W7)
+
+Set `DATA_DIR="./data"` in `web/.env` first (see [Environment variables](#environment-variables)), then restart `npm run dev`.
+
+1. **ข้อมูลบ้าน** (`/admin/houses`): add a house (WA-6), open its details with the eye button (WA-7), edit it (WA-8).
+2. **ข้อมูลห้องน้ำ** (`/admin/bathrooms`): add a bathroom to it with a Rx MAC like `A4-CF-12-3B-9E-01` (WA-9) and see it saved as `a4:cf:12:3b:9e:01`. Try the same MAC again: "Rx MAC นี้ถูกใช้กับห้องน้ำอื่นแล้ว".
+3. Upload a baseline with "แก้ไข / Baseline" (WA-12). Any `.npy` file works, e.g. from Python: `numpy.save('base.npy', numpy.zeros((10, 64)))`. Set "วันเวลาที่บันทึก" to 7 months ago and the status turns "⚠️ ควรปรับเทียบใหม่" (WA-11); upload again with no date and it's "ปกติ".
+4. **ผู้ติดตามห้องน้ำ** (`/admin/watchers`): pair a user with the house and tick bathrooms (WA-13, WA-14), then untick one or use the bin button (WA-15). The accounts page now shows the house and the count.
+
+The remaining sidebar pages (audit log, alert settings) are W9–W10 work, so they show 404 for now.
 
 **Changing the schema:** edit `schema.prisma`, run `npx prisma migrate dev --name <change>`, and open a PR reviewed by พัลลภ + พลกฤต. Never edit a migration after it's merged.
 

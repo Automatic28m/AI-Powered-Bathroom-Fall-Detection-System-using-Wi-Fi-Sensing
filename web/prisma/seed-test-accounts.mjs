@@ -1,5 +1,6 @@
-// Test accounts for local development ONLY: one admin and one user, both with
-// the password 123456789. See README.md "Test accounts".
+// Test data for local development ONLY: one admin and one user, both with
+// the password 123456789, plus a test house with two bathrooms.
+// See README.md "Test accounts".
 // Run: npm run db:seed:test   (safe to run again: it resets both passwords)
 //
 // Never run this on the public server. The password is written in the README,
@@ -68,6 +69,41 @@ async function main() {
     })
     console.log(`Test ${data.role}: ${data.username} / ${PASSWORD}`)
   }
+  await seedTestHouse()
+}
+
+// A test house with two bathrooms; testuser lives there and watches the first one.
+// Only created if missing, so changes made in the web pages are kept.
+const TEST_HOUSE = { name: 'บ้านทดสอบ', address: '1 ถนนทดสอบ ปทุมธานี' }
+const TEST_BATHROOMS = [
+  { name: 'ห้องน้ำทดสอบ 1', rxMac: '02:00:00:00:00:01' },
+  { name: 'ห้องน้ำทดสอบ 2', rxMac: '02:00:00:00:00:02' },
+]
+
+async function seedTestHouse() {
+  const house =
+    (await prisma.house.findFirst({ where: { name: TEST_HOUSE.name } })) ??
+    (await prisma.house.create({ data: TEST_HOUSE }))
+  const bathrooms = []
+  for (const b of TEST_BATHROOMS) {
+    bathrooms.push(
+      await prisma.bathroom.upsert({
+        where: { rxMac: b.rxMac },
+        create: { ...b, houseId: house.id },
+        update: {},
+      })
+    )
+  }
+  const user = await prisma.account.findUniqueOrThrow({ where: { username: 'testuser' } })
+  if (user.houseId === null) {
+    await prisma.account.update({ where: { id: user.id }, data: { houseId: house.id } })
+    await prisma.bathroomWatcher.upsert({
+      where: { accountId_bathroomId: { accountId: user.id, bathroomId: bathrooms[0].id } },
+      create: { accountId: user.id, bathroomId: bathrooms[0].id },
+      update: {},
+    })
+  }
+  console.log(`Test house: ${house.name} (${bathrooms.length} bathrooms)`)
 }
 
 main()

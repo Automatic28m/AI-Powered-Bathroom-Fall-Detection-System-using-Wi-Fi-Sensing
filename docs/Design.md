@@ -51,7 +51,7 @@ How the system is built. **What** it must do is in `PRD.md`. **Who** does each p
 | Web app | **Next.js** (App Router, Node runtime, self-hosted), **JavaScript** (no TypeScript) | UI + API route handlers. JSDoc + zod instead of types (see `CONVENTIONS.md`). |
 | ORM / migrations | **Prisma** | The single source of truth for the database schema. Python reads and writes the same tables. |
 | Auth | **Better Auth** (email/username + password, sign-up off) | Only admins create accounts (WA-1, WA-3) |
-| UI | Tailwind CSS + shadcn/ui, Recharts | |
+| UI | Tailwind CSS + components adapted from the Sedap template (MIT), Recharts | See `DesignSystem.md` |
 | Real-time | PostgreSQL `LISTEN/NOTIFY` → Next.js **Server-Sent Events** | |
 | Email | **SMTP** (Gmail app password to start) via Python `smtplib` | 500 emails/day is plenty. Can move to Resend later. |
 | Deployment | **Docker Compose** inside **WSL2** (mirrored networking) | See §9 |
@@ -91,7 +91,7 @@ UDP packet → per-room ring buffer (by Rx MAC) → every 1 s:
 - **Motion gate:** a cheap variance check before calling the VLM. It saves GPU time and cuts false alarms when the room is empty.
 - **Cooldown:** one fall gives one event and one email, not one per second.
 - **Packet loss:** the gateway sequence number shows gaps. If a window is missing more than 20% of its packets, skip it and log it.
-- **Baselines:** each room's baseline is loaded from `/data/baselines/` (the path is in the DB) and cached. When `NOTIFY baseline_changed` arrives, the cache reloads.
+- **Baselines:** each room's current baseline (`baselines.is_current`) is loaded from `/data/baselines/` and cached. `baselines.file_path` is relative to `DATA_DIR` (e.g. `baselines/3/20261128T074205123Z.npy`), so join it with `/data`. Next.js sends `NOTIFY baseline_changed` with the bathroom id as payload when a new baseline is uploaded; the cache reloads that room.
 - **Latency budget** (PRD §6.1): window 3 s (unavoidable) + DAPD < 0.3 s + VLM ≤ 2 s + DB < 0.1 s, which keeps it under 5 s to the dashboard. The email is sent right after the insert, so it's well under 10 s.
 
 ## 5. Database (PostgreSQL)
@@ -126,7 +126,8 @@ Better Auth adds its own tables, named `sessions`, `auth_accounts` and `verifica
 - **Every create, update or delete** from the web writes an `audit_logs` row in the same transaction (WA-17).
 - **`alert_deliveries.channel`** is text, so LINE or SMS can be added later without changing the schema (PRD NF-5).
 - **Real-time:** a trigger on `fall_events` INSERT runs `pg_notify('fall_events', id)`. Next.js holds one `LISTEN` connection and sends the event to open dashboards over SSE.
-- **Indexes:** `fall_events(bathroom_id, detected_at DESC)` and `audit_logs(created_at DESC)`.
+- **Indexes:** `fall_events(bathroom_id, detected_at DESC)`, `audit_logs(created_at DESC)` and `bathroom_watchers(bathroom_id)` (ai-service looks up who to alert on every fall).
+- **One current baseline per bathroom:** a partial unique index on `baselines(bathroom_id) WHERE is_current` (migration `0003`). When Next.js uploads a new baseline, it sets the old one's `is_current = false` in the same transaction, or the insert fails (WA-9, WA-12).
 
 ### 5.3 Who writes what
 
@@ -167,7 +168,7 @@ Better Auth adds its own tables, named `sessions`, `auth_accounts` and `verifica
 | `/houses`, `/houses/:id` | GET, POST, PATCH | admin | WA-6–8 |
 | `/bathrooms`, `/bathrooms/:id` | GET, POST, PATCH | admin | WA-9, 10, 12 |
 | `/bathrooms/:id/baseline` | POST (file upload) | admin | WA-9, 12 |
-| `/watchers` | GET, POST, DELETE | admin | WA-13–15 |
+| `/watchers` | GET, POST `{accountId, houseId, bathroomIds}` (sets the user's house + full list), DELETE `?accountId=&bathroomId=` | admin | WA-13–15 |
 | `/fall-events` | GET (filter, paginate) | admin: all; user: own house | WA-16, WU-2 |
 | `/fall-events/:id/heatmap` | GET (image, auth checked) | same as above | WA-16 |
 | `/stats/falls?days=7` | GET | admin | WA-16 |
@@ -194,7 +195,7 @@ All JSON. Errors come back as `{ "error": { "code": "...", "message": "..." } }`
 └─ models/                                     LoRA adapters
 ```
 
-`/data` is a Docker volume shared by `web` and `ai-service`. Heatmaps are **never** in `public/`. Each request checks that the user can see that bathroom.
+`/data` is a Docker volume shared by `web` and `ai-service`. `baselines.file_path` is stored relative to it. Heatmaps are **never** in `public/`. Each request checks that the user can see that bathroom.
 
 ## 8. Gateway: Raspberry Pi Zero 2 W
 

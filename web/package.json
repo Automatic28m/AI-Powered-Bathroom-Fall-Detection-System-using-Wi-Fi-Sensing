@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:seed:test": "node --env-file=.env prisma/seed-test-accounts.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",

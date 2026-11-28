@@ -7,7 +7,7 @@ Shared rules so the code looks like one team wrote it. If a rule gets in the way
 | Rule | Detail |
 |---|---|
 | Language | Code, comments, commits and PRs in **English**. UI text can be Thai. |
-| Encoding | UTF-8, **LF** line endings, newline at the end of each file (enforced by `.editorconfig` and `.gitattributes` at the repo root) |
+| Encoding | UTF-8, **LF** line endings, newline at the end of each file (enforced by `.editorconfig` and `.gitattributes` inside each folder, e.g. `web/`) |
 | Indentation | Python and C: 4 spaces. JavaScript, JSON, YAML: 2 spaces. |
 | Time | Store and send in **UTC, ISO 8601** (`2027-01-15T07:30:00Z`). Display in **Asia/Bangkok**. |
 | MAC address | Lowercase with colons: `a4:cf:12:3b:9e:01` |
@@ -15,7 +15,7 @@ Shared rules so the code looks like one team wrote it. If a rule gets in the way
 | Comments | Explain **why**, not what. No commented-out code in `main`. |
 | TODOs | `TODO(name): ...`, with an owner |
 
-`.editorconfig` at the repo root:
+`web/.editorconfig` (other folders copy it; Python and C folders set `indent_size = 4`):
 
 ```ini
 root = true
@@ -27,9 +27,6 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
-
-[*.{py,c,h}]
-indent_size = 4
 
 [*.md]
 trim_trailing_whitespace = false

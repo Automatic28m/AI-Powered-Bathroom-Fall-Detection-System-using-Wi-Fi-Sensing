@@ -9,10 +9,10 @@ How we use Git and GitHub. Keep it simple: **one integration branch (`develop`),
 ├─ firmware/     ESP32 Tx/Rx (ESP-IDF, C)          ศักดา
 ├─ gateway/      Pi Zero 2 W serial → UDP (Python)  ศักดา
 ├─ ai/           AI service + training (Python)     พัลลภ
-├─ web/          Next.js app (JavaScript)           พลกฤต
+├─ web/          Next.js app (JavaScript)           พลกฤต   ← project README.md lives here
 ├─ infra/        docker-compose, cloudflared, WSL2  พัลลภ
 ├─ docs/         PRD, Design, Contract, etc.        all
-└─ README.md
+└─ .github/      PR template (the only file kept at the root)
 ```
 
 ## 2. Branches
@@ -101,9 +101,9 @@ chore(infra): pin vllm version in compose
 | CSI recordings, datasets | Server `/data/recordings/` + a shared drive backup |
 | Model weights, LoRA adapters | Server `/data/models/` |
 | Heatmap images, baselines | Server `/data/` |
-| `node_modules/`, `__pycache__/`, `.venv/`, `build/`, `.next/` | ignored (see `.gitignore`) |
+| `node_modules/`, `__pycache__/`, `.venv/`, `build/`, `.next/` | ignored by the `.gitignore` inside each folder (there is no root `.gitignore`) |
 
-Personal or editor-specific files go in your own `.git/info/exclude`, not in the shared `.gitignore`.
+Each folder keeps its own `.gitignore`, and it **must** ignore `.env` and `.env.*` (keep `!.env.example`). A new folder (`gateway/`, `ai/`, `infra/`) adds one in its first PR. Personal or editor-specific files go in your own `.git/info/exclude`, not in a shared `.gitignore`.
 
 If you commit a secret by mistake: **change the secret right away**, then tell the team. Deleting the commit isn't enough.
 

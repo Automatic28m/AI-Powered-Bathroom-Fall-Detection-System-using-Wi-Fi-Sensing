@@ -6,22 +6,62 @@ Admins manage accounts, houses, bathrooms and watchers. Users see their house an
 
 **Owner:** พลกฤต สมทรง
 
+## About the project
+
+Real-time bathroom fall detection with no cameras and no wearables. Two ESP32 boards measure Wi-Fi
+Channel State Information (CSI) across the room. A server turns it into DAPD heatmaps, and a Vision
+Language Model decides between "normal" and "fall". This web app shows the status live and emails
+caregivers when someone falls.
+
+```
+ESP32 Tx ~~Wi-Fi~~> ESP32 Rx ─serial─> Pi gateway ─UDP─> AI service (DAPD + VLM) ─> PostgreSQL ─> Next.js web + email
+```
+
+See [`System Diagram.png`](../System%20Diagram.png) and [`docs/Design.md`](../docs/Design.md) for the full design.
+
+| Folder                      | What                                        | Owner |
+| --------------------------- | ------------------------------------------- | ----- |
+| [`firmware/`](../firmware/) | ESP32 Tx/Rx CSI firmware + host check tools | ศักดา  |
+| `gateway/`                  | Pi Zero 2 W: serial → UDP                   | ศักดา  |
+| `ai/`                       | AI service (ingest, DAPD, VLM) + training   | พัลลภ  |
+| [`web/`](./)                | Next.js web app + API, Prisma schema        | พลกฤต |
+| `infra/`                    | Docker Compose, Cloudflare Tunnel, WSL2     | พัลลภ  |
+| [`docs/`](../docs/)         | PRD, design, conventions, schedule          | all   |
+
+| Doc                                          | What it covers                                        |
+| -------------------------------------------- | ----------------------------------------------------- |
+| [`PRD.md`](../docs/PRD.md)                   | Requirements and feature IDs (WA-\*, WU-\*)           |
+| [`Design.md`](../docs/Design.md)             | Architecture, database, interfaces, deployment        |
+| [`Schedule.md`](../docs/Schedule.md)         | Week-by-week plan and milestones                      |
+| [`GIT_FLOW.md`](../docs/GIT_FLOW.md)         | Branches, commits, pull requests                      |
+| [`CONVENTIONS.md`](../docs/CONVENTIONS.md)   | Code style for C, Python, JavaScript and the database |
+| [`DesignSystem.md`](../docs/DesignSystem.md) | Colors, type and components for the web UI            |
+| [`Wireframes.md`](../docs/Wireframes.md)     | Layout of every web page                              |
+| [`Contract.md`](../docs/Contract.md)         | Team, roles and how we work                           |
+
+**Team:** พัลลภ บุญเหลือ (AI, AI service, deployment), ศักดา เบ้าคำ (IoT: hardware, firmware, gateway),
+พลกฤต สมทรง (web app, documentation). **Advisors:** ดร.พชร ศรีมุกข์, ดร.อนุรักษ์ พรหมโคตร
+
+**Contributing:** branch off `develop`, commit with Conventional Commits (`feat(web): ...`), and open a PR
+into `develop` using the template in `.github/` ([`GIT_FLOW.md`](../docs/GIT_FLOW.md)). Changes to
+`web/prisma/` need พัลลภ + พลกฤต.
+
 ## Progress
 
 Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web app + docs).
 **Current target: up to W3–W5, Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5).** W5–W7 hasn't started.
 
-| Week    | Task                                                                              | Status                                                                                                                                                     |
-| ------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1      | `GIT_FLOW.md`, `CONVENTIONS.md`, repo setup                                       | ✅ Done. Root README, `.editorconfig`, `.gitattributes` and PR template are on branch `docs/web-design-system`, waiting for PR review.                     |
-| W1–W2   | `DesignSystem.md` + wireframes of the main pages                                  | ✅ Done                                                                                                                                                    |
-| W2–W3   | Prisma schema + migrations → **M2**                                               | ✅ `0001_init` merged into `develop` (PR #4). `0002_auth_serial_ids` + `0003_watcher_and_baseline_indexes` waiting for review by พัลลภ → then M2 is frozen. |
-| W3–W5   | Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5)          | ✅ Done and tested end to end. Waiting for PR review.                                                                                                      |
-| W5–W7   | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ⬜ Not started                                                                                                                                             |
-| W8–W10  | Fall dashboard, history, chart, heatmap view, SSE (WA-16)                         | ⬜ Not started                                                                                                                                             |
-| W9–W10  | User pages (WU-1 to WU-4)                                                         | ⬜ Not started                                                                                                                                             |
-| W10     | Audit log page (WA-17)                                                            | ⬜ Not started                                                                                                                                             |
-| W10–W11 | Test plan + web testing                                                           | ⬜ Not started                                                                                                                                             |
+| Week    | Task                                                                              | Status                                                                                                                                                         |
+| ------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1      | `GIT_FLOW.md`, `CONVENTIONS.md`, repo setup                                       | ✅ Done. This README (now the project README; the root one was removed), `web/.editorconfig`, `web/.gitattributes` and the PR template, waiting for PR review. |
+| W1–W2   | `DesignSystem.md` + wireframes of the main pages                                  | ✅ Done                                                                                                                                                        |
+| W2–W3   | Prisma schema + migrations → **M2**                                               | ✅ `0001_init` merged into `develop` (PR #4). `0002_auth_serial_ids` + `0003_watcher_and_baseline_indexes` waiting for review by พัลลภ → then M2 is frozen.     |
+| W3–W5   | Next.js setup, Better Auth (login, roles), accounts pages (WA-1 to WA-5)          | ✅ Done and tested end to end. Waiting for PR review.                                                                                                          |
+| W5–W7   | Houses, bathrooms, baseline upload, watchers (WA-6 to WA-15) + audit logging → M5 | ⬜ Not started                                                                                                                                                 |
+| W8–W10  | Fall dashboard, history, chart, heatmap view, SSE (WA-16)                         | ⬜ Not started                                                                                                                                                 |
+| W9–W10  | User pages (WU-1 to WU-4)                                                         | ⬜ Not started                                                                                                                                                 |
+| W10     | Audit log page (WA-17)                                                            | ⬜ Not started                                                                                                                                                 |
+| W10–W11 | Test plan + web testing                                                           | ⬜ Not started                                                                                                                                                 |
 
 ### What's done
 
@@ -29,7 +69,7 @@ Plan from [`docs/Schedule.md`](../docs/Schedule.md) §2 (พลกฤต: web ap
 
 - [`GIT_FLOW.md`](../docs/GIT_FLOW.md) and [`CONVENTIONS.md`](../docs/CONVENTIONS.md) are written. The code follows them, and TODOs are written as `TODO(name): ...`.
 - `GIT_FLOW.md` now matches how the repo really works: feature branches start from and merge into **`develop`** (the default branch). `main` only gets `develop` at milestones, and milestone tags go on `main`.
-- The repo root has a `README.md`, `.editorconfig` (UTF-8, LF, 2 spaces; 4 for Python/C), `.gitattributes` (LF on every OS) and `.github/pull_request_template.md`. `web/` keeps its own `.gitignore`.
+- Config lives inside each folder, not at the repo root. `web/` has `.editorconfig` (UTF-8, LF, 2 spaces), `.gitattributes` (LF on every OS) and `.gitignore`. `firmware/` keeps its own `.gitignore`. Only `.github/pull_request_template.md` stays at the root, because GitHub reads it from there.
 - Prettier, ESLint and `jsconfig.json` (the `@/` import path) are set up.
 
 **W1–W2: design**
@@ -213,11 +253,34 @@ docker run -d --name fallwatch-db -p 5432:5432 \
   -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -e POSTGRES_DB=fallwatch postgres:16
 ```
 
-Then log in at `/login` with `SEED_ADMIN_USERNAME` (or `SEED_ADMIN_EMAIL`) and `SEED_ADMIN_PASSWORD`, and create the other accounts at `/admin/accounts`. If you type a wrong password more than 5 times in a minute, wait a minute before trying again.
+After a computer restart the container is stopped. Start Docker Desktop, then run `docker start fallwatch-db`.
+
+### How to log in
+
+Open **http://localhost:3000**. It sends you to `/login`. Type a **username or an email** and the password.
+
+**Test accounts (local development only).** Create them once with:
+
+```bash
+npm run db:seed:test
+```
+
+| Role  | Username    | Email                       | Password    | Lands on |
+| ----- | ----------- | --------------------------- | ----------- | -------- |
+| Admin | `testadmin` | `testadmin@fallwatch.local` | `123456789` | `/admin` |
+| User  | `testuser`  | `testuser@fallwatch.local`  | `123456789` | `/home`  |
+
+- Running the command again resets both passwords to `123456789` and turns the accounts back on. Use it if you turned `testuser` off while testing WA-5.
+- `testuser` has no house yet. Linking a house (WA-13) comes in W5–W7.
+- **Never run it on the public server.** The password is in this README, so anyone could log in. The script ([`prisma/seed-test-accounts.mjs`](prisma/seed-test-accounts.mjs)) refuses to run when `NODE_ENV=production`.
+
+**Your own admin:** `SEED_ADMIN_USERNAME` (or `SEED_ADMIN_EMAIL`) and `SEED_ADMIN_PASSWORD` from `.env`, created by `npx prisma db seed`. Create the other accounts at `/admin/accounts`.
+
+If you type a wrong password more than 5 times in a minute, wait a minute before trying again.
 
 ### Quick review checklist (W3–W5)
 
-1. Open `/login` and log in as the seed admin, once with the username and once with the email.
+1. Open `/login` and log in as `testadmin` / `123456789` (or the seed admin), once with the username and once with the email.
 2. Go to **บัญชีผู้ใช้งาน** (`/admin/accounts`). Add an admin (WA-1) and a user with an address (WA-3).
 3. Check the table (WA-4): search, the role filter, linked house, bathrooms watched and date added.
 4. Turn the user off (WA-5), then try to log in as that user in a private window. You should see "บัญชีนี้ถูกปิดการใช้งาน". Turn it back on and log in: the user lands on `/home`, and opening `/admin` sends them back.
